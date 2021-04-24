@@ -6,13 +6,16 @@
 #include "PPU.h"
 
 #include <thread>
+#include <chrono>
 #include <condition_variable>
+
+typedef std::chrono::high_resolution_clock::time_point Timestamp;
 
 class Gameboy
 {
 public:
-    Gameboy(wxWindow*, Cartridge*);
-    Gameboy(Gameboy&) = delete;
+    Gameboy(wxWindow *, Cartridge *);
+    Gameboy(Gameboy &) = delete;
     virtual ~Gameboy();
 
     void Pause();
@@ -20,19 +23,22 @@ public:
     void Run();
     void Stop();
 
-    Memory* GetMemory();
-    Cartridge* GetCartridge();
+    Memory *GetMemory();
+    Cartridge *GetCartridge();
 
 private:
-    CPU* cpuUnit;
-    Cartridge* cart;
-    Memory* memoryUnit;
-    PPU* ppuUnit;
-    std::thread* thread;
+    CPU *cpuUnit;
+    Cartridge *cart;
+    Memory *memoryUnit;
+    PPU *ppuUnit;
+    std::thread *thread;
     std::mutex mtx;
     std::condition_variable cv;
     bool pause;
     bool running;
+
+    Timestamp CurrentTimestamp();
+    void WaitForFrame(Timestamp);
 
     void wait();
 };

@@ -11,16 +11,17 @@
 
 #include <wx/wx.h>
 #include <wx/notebook.h>
-class Debugger : public wxFrame {
+class Debugger : public wxFrame
+{
 
 public:
-    Debugger(wxFrame*, Gameboy*, Memory*, Cartridge*);
+    Debugger(wxFrame *, Gameboy *, Memory *, Cartridge *);
     ~Debugger();
 
 private:
-    Gameboy* gameboyRef;
+    Gameboy *gameboyRef;
 
-    void OnClose(wxCloseEvent&);
+    void OnClose(wxCloseEvent &);
 
     wxDECLARE_EVENT_TABLE();
 };

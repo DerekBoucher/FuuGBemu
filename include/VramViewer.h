@@ -4,13 +4,14 @@
 #include <wx/wx.h>
 #include "Memory.h"
 
-class VramViewer : public wxWindow {
+class VramViewer : public wxWindow
+{
 
 public:
-    VramViewer(wxWindow*, Memory*);
+    VramViewer(wxWindow *, Memory *);
     ~VramViewer();
-private:
 
+private:
 };
 
 #endif

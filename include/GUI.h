@@ -7,7 +7,8 @@
 
 #include <wx/frame.h>
 
-class GUI : public wxFrame {
+class GUI : public wxFrame
+{
 
 public:
     GUI();
@@ -16,13 +17,13 @@ public:
     wxDECLARE_EVENT_TABLE();
 
 private:
-    Debugger* debugger = nullptr;
-    wxWindow* gameboyScreen = nullptr;
-    Gameboy* gameboy = nullptr;
-    void OnClose(wxCloseEvent&);
-    void OnClickOpen(wxCommandEvent&);
-    void OnClickExit(wxCommandEvent&);
-    void OnClickDebugger(wxCommandEvent&);
+    Debugger *debugger = nullptr;
+    wxWindow *gameboyScreen = nullptr;
+    Gameboy *gameboy = nullptr;
+    void OnClose(wxCloseEvent &);
+    void OnClickOpen(wxCommandEvent &);
+    void OnClickExit(wxCommandEvent &);
+    void OnClickDebugger(wxCommandEvent &);
 };
 
 #endif

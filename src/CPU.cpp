@@ -1,6 +1,7 @@
 #include "CPU.h"
 
-CPU::CPU(Memory* mem) : AF(0x0000), BC(0x0000), DE(0x0000), HL(0x0000), temp(0x0000) {
+CPU::CPU(Memory *mem) : AF(0x0000), BC(0x0000), DE(0x0000), HL(0x0000), temp(0x0000)
+{
     PC = 0x0000;
     SP = 0x0000;
 
@@ -15,14 +16,17 @@ CPU::CPU(Memory* mem) : AF(0x0000), BC(0x0000), DE(0x0000), HL(0x0000), temp(0x0
     IME = false;
 }
 
-CPU::~CPU() {
+CPU::~CPU()
+{
 }
 
-void CPU::Pause() {
+void CPU::Pause()
+{
     Paused = true;
 }
 
-int CPU::ExecuteNextOpCode() {
+int CPU::ExecuteNextOpCode()
+{
 
     byte = memoryUnit->Read(PC++);
 
@@ -3381,7 +3385,8 @@ int CPU::ExecuteNextOpCode() {
     }
 
 #ifdef FUUGB_DEBUG
-    if (memoryUnit->DmaRead(0xFF02) == 0x81) {
+    if (memoryUnit->DmaRead(0xFF02) == 0x81)
+    {
         printf("%c", memoryUnit->DmaRead(0xFF01));
         memoryUnit->DmaWrite(0xFF02, 0x00);
     }
@@ -3389,13 +3394,15 @@ int CPU::ExecuteNextOpCode() {
     return cyclesExecuted;
 }
 
-uWORD CPU::increment16BitRegister(uWORD reg) {
+uWORD CPU::increment16BitRegister(uWORD reg)
+{
     reg++;
     memoryUnit->UpdateTimers(4);
     return reg;
 }
 
-uBYTE CPU::increment8BitRegister(uBYTE reg) {
+uBYTE CPU::increment8BitRegister(uBYTE reg)
+{
     if (checkCarryFromBit_Byte(4, reg, 0x01))
         CPU_FLAG_BIT_SET(H_FLAG);
     else
@@ -3413,7 +3420,8 @@ uBYTE CPU::increment8BitRegister(uBYTE reg) {
     return reg;
 }
 
-uBYTE CPU::decrement8BitRegister(uBYTE reg) {
+uBYTE CPU::decrement8BitRegister(uBYTE reg)
+{
     if (checkBorrowFromBit_Byte(4, reg, 0x01))
         CPU_FLAG_BIT_SET(H_FLAG);
     else
@@ -3431,13 +3439,15 @@ uBYTE CPU::decrement8BitRegister(uBYTE reg) {
     return reg;
 }
 
-uWORD CPU::decrement16BitRegister(uWORD reg) {
+uWORD CPU::decrement16BitRegister(uWORD reg)
+{
     reg--;
     memoryUnit->UpdateTimers(4);
     return reg;
 }
 
-uWORD CPU::add16BitRegister(uWORD host, uWORD operand) {
+uWORD CPU::add16BitRegister(uWORD host, uWORD operand)
+{
     CPU_FLAG_BIT_RESET(N_FLAG);
 
     if (checkCarryFromBit_Word(12, host, operand))
@@ -3457,15 +3467,18 @@ uWORD CPU::add16BitRegister(uWORD host, uWORD operand) {
     return host;
 }
 
-bool CPU::testBitInByte(uBYTE byte, int pos) {
+bool CPU::testBitInByte(uBYTE byte, int pos)
+{
     return (byte & (1 << pos));
 }
 
-bool CPU::testBitInWord(uWORD word, int pos) {
+bool CPU::testBitInWord(uWORD word, int pos)
+{
     return (word & (1 << pos));
 }
 
-bool CPU::checkCarryFromBit_Byte(int pos, uBYTE byte, uBYTE addedByte) {
+bool CPU::checkCarryFromBit_Byte(int pos, uBYTE byte, uBYTE addedByte)
+{
     uBYTE mask = 0x00;
 
     switch (pos)
@@ -3502,7 +3515,8 @@ bool CPU::checkCarryFromBit_Byte(int pos, uBYTE byte, uBYTE addedByte) {
         return false;
 }
 
-bool CPU::checkCarryFromBit_Byte(int pos, uBYTE byte, uBYTE addedByte, uBYTE carry) {
+bool CPU::checkCarryFromBit_Byte(int pos, uBYTE byte, uBYTE addedByte, uBYTE carry)
+{
     uBYTE mask = 0x00;
 
     switch (pos)
@@ -3540,7 +3554,8 @@ bool CPU::checkCarryFromBit_Byte(int pos, uBYTE byte, uBYTE addedByte, uBYTE car
         return false;
 }
 
-bool CPU::checkCarryFromBit_Word(int pos, uWORD word, uWORD addedWord) {
+bool CPU::checkCarryFromBit_Word(int pos, uWORD word, uWORD addedWord)
+{
     uWORD mask = 0x00;
 
     switch (pos)
@@ -3601,7 +3616,8 @@ bool CPU::checkCarryFromBit_Word(int pos, uWORD word, uWORD addedWord) {
         return false;
 }
 
-bool CPU::checkCarryFromBit_Word(int pos, uWORD word, uWORD addedWord, uWORD carry) {
+bool CPU::checkCarryFromBit_Word(int pos, uWORD word, uWORD addedWord, uWORD carry)
+{
     uWORD mask = 0x00;
 
     switch (pos)
@@ -3663,7 +3679,8 @@ bool CPU::checkCarryFromBit_Word(int pos, uWORD word, uWORD addedWord, uWORD car
         return false;
 }
 
-bool CPU::checkBorrowFromBit_Byte(int pos, uBYTE byte, uBYTE subtractedByte) {
+bool CPU::checkBorrowFromBit_Byte(int pos, uBYTE byte, uBYTE subtractedByte)
+{
     uBYTE mask = 0x00;
 
     switch (pos)
@@ -3700,7 +3717,8 @@ bool CPU::checkBorrowFromBit_Byte(int pos, uBYTE byte, uBYTE subtractedByte) {
         return false;
 }
 
-bool CPU::checkBorrowFromBit_Byte(int pos, uBYTE byte, uBYTE subtractedByte, uBYTE carry) {
+bool CPU::checkBorrowFromBit_Byte(int pos, uBYTE byte, uBYTE subtractedByte, uBYTE carry)
+{
     uBYTE mask = 0x00;
 
     switch (pos)
@@ -3738,7 +3756,8 @@ bool CPU::checkBorrowFromBit_Byte(int pos, uBYTE byte, uBYTE subtractedByte, uBY
         return false;
 }
 
-bool CPU::checkBorrowFromBit_Word(int pos, uWORD word, uWORD subtractedWord) {
+bool CPU::checkBorrowFromBit_Word(int pos, uWORD word, uWORD subtractedWord)
+{
     uWORD mask = 0x00;
 
     switch (pos)
@@ -3799,7 +3818,8 @@ bool CPU::checkBorrowFromBit_Word(int pos, uWORD word, uWORD subtractedWord) {
         return false;
 }
 
-bool CPU::checkBorrowFromBit_Word(int pos, uWORD word, uWORD subtractedWord, uWORD carry) {
+bool CPU::checkBorrowFromBit_Word(int pos, uWORD word, uWORD subtractedWord, uWORD carry)
+{
     uWORD mask = 0x00;
 
     switch (pos)
@@ -3861,15 +3881,18 @@ bool CPU::checkBorrowFromBit_Word(int pos, uWORD word, uWORD subtractedWord, uWO
         return false;
 }
 
-uBYTE CPU::twoComp_Byte(uBYTE byte) {
+uBYTE CPU::twoComp_Byte(uBYTE byte)
+{
     return (~byte) + 0x01;
 }
 
-uWORD CPU::twoComp_Word(uWORD word) {
+uWORD CPU::twoComp_Word(uWORD word)
+{
     return (~word) + 0x01;
 }
 
-uBYTE CPU::add8BitRegister(uBYTE host, uBYTE operand) {
+uBYTE CPU::add8BitRegister(uBYTE host, uBYTE operand)
+{
     if (checkCarryFromBit_Byte(4, host, operand))
         CPU_FLAG_BIT_SET(H_FLAG);
     else
@@ -3892,7 +3915,8 @@ uBYTE CPU::add8BitRegister(uBYTE host, uBYTE operand) {
     return host;
 }
 
-uBYTE CPU::add8BitRegister(uBYTE host, uBYTE operand, bool carry) {
+uBYTE CPU::add8BitRegister(uBYTE host, uBYTE operand, bool carry)
+{
     uBYTE c = 0x00;
 
     if (carry)
@@ -3923,7 +3947,8 @@ uBYTE CPU::add8BitRegister(uBYTE host, uBYTE operand, bool carry) {
     return host;
 }
 
-uBYTE CPU::sub8BitRegister(uBYTE host, uBYTE operand) {
+uBYTE CPU::sub8BitRegister(uBYTE host, uBYTE operand)
+{
     if (checkBorrowFromBit_Byte(4, host, operand))
         CPU_FLAG_BIT_SET(H_FLAG);
     else
@@ -3946,7 +3971,8 @@ uBYTE CPU::sub8BitRegister(uBYTE host, uBYTE operand) {
     return host;
 }
 
-uBYTE CPU::sub8BitRegister(uBYTE host, uBYTE operand, bool carry) {
+uBYTE CPU::sub8BitRegister(uBYTE host, uBYTE operand, bool carry)
+{
     uBYTE c = 0x00;
 
     if (carry)
@@ -3976,7 +4002,8 @@ uBYTE CPU::sub8BitRegister(uBYTE host, uBYTE operand, bool carry) {
     return host;
 }
 
-uBYTE CPU::and8BitRegister(uBYTE host, uBYTE operand) {
+uBYTE CPU::and8BitRegister(uBYTE host, uBYTE operand)
+{
     host = host & operand;
 
     if (host == 0x00)
@@ -3991,7 +4018,8 @@ uBYTE CPU::and8BitRegister(uBYTE host, uBYTE operand) {
     return host;
 }
 
-uBYTE CPU::xor8BitRegister(uBYTE host, uBYTE operand) {
+uBYTE CPU::xor8BitRegister(uBYTE host, uBYTE operand)
+{
     host = host ^ operand;
 
     if (host == 0x00)
@@ -4006,7 +4034,8 @@ uBYTE CPU::xor8BitRegister(uBYTE host, uBYTE operand) {
     return host;
 }
 
-uBYTE CPU::or8BitRegister(uBYTE host, uBYTE operand) {
+uBYTE CPU::or8BitRegister(uBYTE host, uBYTE operand)
+{
     host = host | operand;
 
     if (host == 0x00)
@@ -4021,7 +4050,8 @@ uBYTE CPU::or8BitRegister(uBYTE host, uBYTE operand) {
     return host;
 }
 
-void CPU::cmp8BitRegister(uBYTE host, uBYTE operand) {
+void CPU::cmp8BitRegister(uBYTE host, uBYTE operand)
+{
     if (host == operand)
         CPU_FLAG_BIT_SET(Z_FLAG);
     else
@@ -4040,7 +4070,8 @@ void CPU::cmp8BitRegister(uBYTE host, uBYTE operand) {
         CPU_FLAG_BIT_RESET(C_FLAG);
 }
 
-uBYTE CPU::rotateReg(bool direction, bool withCarry, uBYTE reg) {
+uBYTE CPU::rotateReg(bool direction, bool withCarry, uBYTE reg)
+{
     if (direction) //left
     {
         bool oldCarry = CPU_FLAG_BIT_TEST(C_FLAG);
@@ -4090,7 +4121,8 @@ uBYTE CPU::rotateReg(bool direction, bool withCarry, uBYTE reg) {
     return reg;
 }
 
-uBYTE CPU::rotateRegExt(bool direction, bool withCarry, uBYTE reg) {
+uBYTE CPU::rotateRegExt(bool direction, bool withCarry, uBYTE reg)
+{
     if (direction) //left
     {
         bool oldCarry = CPU_FLAG_BIT_TEST(C_FLAG);
@@ -4144,7 +4176,8 @@ uBYTE CPU::rotateRegExt(bool direction, bool withCarry, uBYTE reg) {
     return reg;
 }
 
-uBYTE CPU::shiftReg(bool direction, bool keepMSB, uBYTE reg) {
+uBYTE CPU::shiftReg(bool direction, bool keepMSB, uBYTE reg)
+{
     bool oldMSB = (reg & (1 << 7));
     if (direction) //left
     {
@@ -4184,7 +4217,8 @@ uBYTE CPU::shiftReg(bool direction, bool keepMSB, uBYTE reg) {
     return reg;
 }
 
-uBYTE CPU::swapReg(uBYTE reg) {
+uBYTE CPU::swapReg(uBYTE reg)
+{
     uBYTE result = ((reg & 0x0F) << 4) | ((reg & 0xF0) >> 4);
 
     if (result == 0x00)
@@ -4199,13 +4233,15 @@ uBYTE CPU::swapReg(uBYTE reg) {
     return result;
 }
 
-void CPU::flagSet(int flag) {
+void CPU::flagSet(int flag)
+{
     uBYTE result = AF.lo;
     result |= (1 << flag);
     AF.lo = result;
 }
 
-void CPU::flagReset(int flag) {
+void CPU::flagReset(int flag)
+{
     uBYTE mask = 0x00;
     for (uBYTE i = 0; i < 8; i++)
     {
@@ -4226,7 +4262,8 @@ bool CPU::flagTest(int flag)
     return (AF.lo & (1 << flag));
 }
 
-void CPU::testBit(int pos, uBYTE reg) {
+void CPU::testBit(int pos, uBYTE reg)
+{
     if (!(reg & (1 << pos)))
         CPU_FLAG_BIT_SET(Z_FLAG);
     else
@@ -4236,7 +4273,8 @@ void CPU::testBit(int pos, uBYTE reg) {
     CPU_FLAG_BIT_SET(H_FLAG);
 }
 
-uBYTE CPU::resetBit(int pos, uBYTE reg) {
+uBYTE CPU::resetBit(int pos, uBYTE reg)
+{
     uBYTE mask = 0x00;
     for (uBYTE i = 0; i < 8; i++)
     {
@@ -4253,11 +4291,13 @@ uBYTE CPU::resetBit(int pos, uBYTE reg) {
     return (reg & mask);
 }
 
-uBYTE CPU::setBit(int pos, uBYTE reg) {
+uBYTE CPU::setBit(int pos, uBYTE reg)
+{
     return (reg | (1 << pos));
 }
 
-void CPU::CheckInterupts() {
+void CPU::CheckInterupts()
+{
     if (!IME)
         return;
 
@@ -4322,7 +4362,8 @@ void CPU::CheckInterupts() {
     }
 }
 
-uBYTE CPU::adjustDAA(uBYTE reg) {
+uBYTE CPU::adjustDAA(uBYTE reg)
+{
     if (!CPU_FLAG_BIT_TEST(N_FLAG))
     {
         if (CPU_FLAG_BIT_TEST(C_FLAG) || (reg > 0x99))
@@ -4353,7 +4394,8 @@ uBYTE CPU::adjustDAA(uBYTE reg) {
     return reg;
 }
 
-void CPU::Halt() {
+void CPU::Halt()
+{
     uBYTE IE = memoryUnit->DmaRead(INTERUPT_EN_REGISTER_ADR);
     uBYTE IF = memoryUnit->DmaRead(INTERUPT_FLAG_REG);
     if ((IF & (1 << 0)) && (IE & (1 << 0))) //V-Blank

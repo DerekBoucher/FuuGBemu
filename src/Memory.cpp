@@ -1,6 +1,6 @@
 #include "Memory.h"
 
-Memory::Memory(Cartridge* c)
+Memory::Memory(Cartridge *c)
 {
     cart = c;
     memory = new uBYTE[0x10000];
@@ -14,10 +14,14 @@ Memory::Memory(Cartridge* c)
     dividerRegisterCounter = 0;
 }
 
-Memory::Memory(const Memory& other)
-    : timerCounter(other.timerCounter), dmaCyclesCompleted(other.dmaCyclesCompleted), bootRomClosed(other.bootRomClosed),
-    dmaTransferInProgress(other.dmaTransferInProgress),
-    translatedAddr(other.translatedAddr), cart(other.cart), dividerRegisterCounter(other.dividerRegisterCounter)
+Memory::Memory(const Memory &other)
+    : timerCounter(other.timerCounter),
+      dmaCyclesCompleted(other.dmaCyclesCompleted),
+      bootRomClosed(other.bootRomClosed),
+      dmaTransferInProgress(other.dmaTransferInProgress),
+      translatedAddr(other.translatedAddr),
+      cart(other.cart),
+      dividerRegisterCounter(other.dividerRegisterCounter)
 {
     memory = new uBYTE[0x10000];
     memcpy(memory, other.memory, 0x10000);

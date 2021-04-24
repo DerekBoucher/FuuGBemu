@@ -6,15 +6,17 @@
 
 #include <wx/app.h>
 
-class Application : public wxApp {
+class Application : public wxApp
+{
 
 public:
     Application();
     ~Application();
 
     virtual bool OnInit();
+
 private:
-    GUI* gui;
+    GUI *gui;
 };
 
 wxIMPLEMENT_APP_NO_MAIN(Application);

@@ -10,29 +10,31 @@
 #include <gtk/gtk.h>
 #include <vector>
 
-class PPU {
+class PPU
+{
 
 public:
-    PPU(wxWindow*, Memory*);
-    PPU(PPU&) = delete;
+    PPU(wxWindow *, Memory *);
+    PPU(PPU &) = delete;
     ~PPU();
     void RenderScreen();
     void UpdateGraphics(int);
 
 private:
-    struct sprite {
+    struct sprite
+    {
         uBYTE yPos;
         uBYTE xPos;
         uBYTE patternNumber;
         uBYTE attributes;
     };
 
-    SDL_Window* sdlWindow;
-    SDL_Renderer* renderer;
+    SDL_Window *sdlWindow;
+    SDL_Renderer *renderer;
     uBYTE pixelData[NATIVE_SIZE_X][NATIVE_SIZE_Y];
     uBYTE LCDC;
     uBYTE STAT;
-    Memory* memoryRef;
+    Memory *memoryRef;
     int currentScanline;
     int scanlineCounter;
 
@@ -42,7 +44,7 @@ private:
     void RenderWindow();
     void RenderSprites();
     void SetLCDStatus();
-    sprite* ProcessSprites();
+    sprite *ProcessSprites();
     uBYTE GetStat();
     uBYTE GetLCDC();
 };

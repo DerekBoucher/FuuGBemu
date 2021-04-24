@@ -1,15 +1,16 @@
 #include "PPU.h"
 
-PPU::PPU(wxWindow* screen, Memory* mem)
+PPU::PPU(wxWindow *screen, Memory *mem)
 {
     WXWidget widget = screen->GetHandle();
 #ifdef FUUGB_SYSTEM_LINUX
-    GdkWindow* gdkWindow = gtk_widget_get_window(widget);
+    GdkWindow *gdkWindow = gtk_widget_get_window(widget);
     Window x11Handle = GDK_WINDOW_XID(gdkWindow);
-    sdlWindow = SDL_CreateWindowFrom((void*)x11Handle);
+    sdlWindow = SDL_CreateWindowFrom((void *)x11Handle);
 #endif
 
-    if (sdlWindow == NULL) {
+    if (sdlWindow == NULL)
+    {
         wxPrintf("Error occured during SDL window creation: %s\n", SDL_GetError());
         SDL_Quit();
         wxExit();
@@ -17,8 +18,10 @@ PPU::PPU(wxWindow* screen, Memory* mem)
 
     renderer = SDL_GetRenderer(sdlWindow);
 
-    if (renderer == NULL) {
-        if (!(renderer = SDL_CreateRenderer(sdlWindow, -1, SDL_RENDERER_SOFTWARE))) {
+    if (renderer == NULL)
+    {
+        if (!(renderer = SDL_CreateRenderer(sdlWindow, -1, SDL_RENDERER_SOFTWARE)))
+        {
             wxPrintf("Error occured during SDL renderer creation: %s\n", SDL_GetError());
             SDL_Quit();
             wxExit();
@@ -34,14 +37,16 @@ PPU::PPU(wxWindow* screen, Memory* mem)
     scanlineCounter = 456;
 }
 
-PPU::~PPU() {
+PPU::~PPU()
+{
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
     SDL_RenderClear(renderer);
     SDL_RenderPresent(renderer);
     SDL_DestroyRenderer(renderer);
 }
 
-void PPU::RenderScreen() {
+void PPU::RenderScreen()
+{
     LCDC = GetLCDC();
 
     if (!(LCDC & (1 << 7)))
@@ -220,28 +225,108 @@ void PPU::RenderTiles()
         switch (ColorCode)
         {
         case 0x00:
-            if (Color_00 == 0x00) { R = 245; G = 245; B = 245; }
-            else if (Color_00 == 0x1) { R = 211; G = 211; B = 211; }
-            else if (Color_00 == 0x2) { R = 169; G = 169; B = 169; }
-            else if (Color_00 == 0x3) { R = 0; G = 0; B = 0; }
+            if (Color_00 == 0x00)
+            {
+                R = 245;
+                G = 245;
+                B = 245;
+            }
+            else if (Color_00 == 0x1)
+            {
+                R = 211;
+                G = 211;
+                B = 211;
+            }
+            else if (Color_00 == 0x2)
+            {
+                R = 169;
+                G = 169;
+                B = 169;
+            }
+            else if (Color_00 == 0x3)
+            {
+                R = 0;
+                G = 0;
+                B = 0;
+            }
             break;
         case 0x01:
-            if (Color_01 == 0x00) { R = 245; G = 245; B = 245; }
-            else if (Color_01 == 0x1) { R = 211; G = 211; B = 211; }
-            else if (Color_01 == 0x2) { R = 169; G = 169; B = 169; }
-            else if (Color_01 == 0x3) { R = 0; G = 0; B = 0; }
+            if (Color_01 == 0x00)
+            {
+                R = 245;
+                G = 245;
+                B = 245;
+            }
+            else if (Color_01 == 0x1)
+            {
+                R = 211;
+                G = 211;
+                B = 211;
+            }
+            else if (Color_01 == 0x2)
+            {
+                R = 169;
+                G = 169;
+                B = 169;
+            }
+            else if (Color_01 == 0x3)
+            {
+                R = 0;
+                G = 0;
+                B = 0;
+            }
             break;
         case 0x02:
-            if (Color_10 == 0x00) { R = 245; G = 245; B = 245; }
-            else if (Color_10 == 0x1) { R = 211; G = 211; B = 211; }
-            else if (Color_10 == 0x2) { R = 169; G = 169; B = 169; }
-            else if (Color_10 == 0x3) { R = 0; G = 0; B = 0; }
+            if (Color_10 == 0x00)
+            {
+                R = 245;
+                G = 245;
+                B = 245;
+            }
+            else if (Color_10 == 0x1)
+            {
+                R = 211;
+                G = 211;
+                B = 211;
+            }
+            else if (Color_10 == 0x2)
+            {
+                R = 169;
+                G = 169;
+                B = 169;
+            }
+            else if (Color_10 == 0x3)
+            {
+                R = 0;
+                G = 0;
+                B = 0;
+            }
             break;
         case 0x03:
-            if (Color_11 == 0x00) { R = 245; G = 245; B = 245; }
-            else if (Color_11 == 0x1) { R = 211; G = 211; B = 211; }
-            else if (Color_11 == 0x2) { R = 169; G = 169; B = 169; }
-            else if (Color_11 == 0x3) { R = 0; G = 0; B = 0; }
+            if (Color_11 == 0x00)
+            {
+                R = 245;
+                G = 245;
+                B = 245;
+            }
+            else if (Color_11 == 0x1)
+            {
+                R = 211;
+                G = 211;
+                B = 211;
+            }
+            else if (Color_11 == 0x2)
+            {
+                R = 169;
+                G = 169;
+                B = 169;
+            }
+            else if (Color_11 == 0x3)
+            {
+                R = 0;
+                G = 0;
+                B = 0;
+            }
             break;
         default:
             break;
@@ -368,28 +453,108 @@ void PPU::RenderWindow()
         switch (ColorCode)
         {
         case 0x00:
-            if (Color_00 == 0x00) { R = 245; G = 245; B = 245; }
-            else if (Color_00 == 0x1) { R = 211; G = 211; B = 211; }
-            else if (Color_00 == 0x2) { R = 169; G = 169; B = 169; }
-            else if (Color_00 == 0x3) { R = 0; G = 0; B = 0; }
+            if (Color_00 == 0x00)
+            {
+                R = 245;
+                G = 245;
+                B = 245;
+            }
+            else if (Color_00 == 0x1)
+            {
+                R = 211;
+                G = 211;
+                B = 211;
+            }
+            else if (Color_00 == 0x2)
+            {
+                R = 169;
+                G = 169;
+                B = 169;
+            }
+            else if (Color_00 == 0x3)
+            {
+                R = 0;
+                G = 0;
+                B = 0;
+            }
             break;
         case 0x01:
-            if (Color_01 == 0x00) { R = 245; G = 245; B = 245; }
-            else if (Color_01 == 0x1) { R = 211; G = 211; B = 211; }
-            else if (Color_01 == 0x2) { R = 169; G = 169; B = 169; }
-            else if (Color_01 == 0x3) { R = 0; G = 0; B = 0; }
+            if (Color_01 == 0x00)
+            {
+                R = 245;
+                G = 245;
+                B = 245;
+            }
+            else if (Color_01 == 0x1)
+            {
+                R = 211;
+                G = 211;
+                B = 211;
+            }
+            else if (Color_01 == 0x2)
+            {
+                R = 169;
+                G = 169;
+                B = 169;
+            }
+            else if (Color_01 == 0x3)
+            {
+                R = 0;
+                G = 0;
+                B = 0;
+            }
             break;
         case 0x02:
-            if (Color_10 == 0x00) { R = 245; G = 245; B = 245; }
-            else if (Color_10 == 0x1) { R = 211; G = 211; B = 211; }
-            else if (Color_10 == 0x2) { R = 169; G = 169; B = 169; }
-            else if (Color_10 == 0x3) { R = 0; G = 0; B = 0; }
+            if (Color_10 == 0x00)
+            {
+                R = 245;
+                G = 245;
+                B = 245;
+            }
+            else if (Color_10 == 0x1)
+            {
+                R = 211;
+                G = 211;
+                B = 211;
+            }
+            else if (Color_10 == 0x2)
+            {
+                R = 169;
+                G = 169;
+                B = 169;
+            }
+            else if (Color_10 == 0x3)
+            {
+                R = 0;
+                G = 0;
+                B = 0;
+            }
             break;
         case 0x03:
-            if (Color_11 == 0x00) { R = 245; G = 245; B = 245; }
-            else if (Color_11 == 0x1) { R = 211; G = 211; B = 211; }
-            else if (Color_11 == 0x2) { R = 169; G = 169; B = 169; }
-            else if (Color_11 == 0x3) { R = 0; G = 0; B = 0; }
+            if (Color_11 == 0x00)
+            {
+                R = 245;
+                G = 245;
+                B = 245;
+            }
+            else if (Color_11 == 0x1)
+            {
+                R = 211;
+                G = 211;
+                B = 211;
+            }
+            else if (Color_11 == 0x2)
+            {
+                R = 169;
+                G = 169;
+                B = 169;
+            }
+            else if (Color_11 == 0x3)
+            {
+                R = 0;
+                G = 0;
+                B = 0;
+            }
             break;
         default:
             break;
@@ -399,7 +564,6 @@ void PPU::RenderWindow()
         {
             continue;
         }
-
 
         int w, h, dw, dh;
 
@@ -435,7 +599,7 @@ void PPU::RenderSprites()
         u_8x16 = true;
     }
 
-    sprite* sprites = ProcessSprites();
+    sprite *sprites = ProcessSprites();
 
     for (uBYTE i = 0; i < 40; i++)
     {
@@ -753,9 +917,9 @@ uBYTE PPU::GetStat()
     return memoryRef->DmaRead(STAT_ADR);
 }
 
-PPU::sprite* PPU::ProcessSprites()
+PPU::sprite *PPU::ProcessSprites()
 {
-    sprite* processedSprites = new sprite[40];
+    sprite *processedSprites = new sprite[40];
 
     for (uBYTE i = 40; i != 255; i--)
     {
@@ -788,8 +952,9 @@ PPU::sprite* PPU::ProcessSprites()
     return processedSprites;
 }
 
-void PPU::RenderPixel(int x, int y, uBYTE R, uBYTE G, uBYTE B) {
-    SDL_Surface* surface = SDL_GetWindowSurface(sdlWindow);
+void PPU::RenderPixel(int x, int y, uBYTE R, uBYTE G, uBYTE B)
+{
+    SDL_Surface *surface = SDL_GetWindowSurface(sdlWindow);
     SDL_LockSurface(surface);
 
     int h = surface->h;
@@ -806,8 +971,10 @@ void PPU::RenderPixel(int x, int y, uBYTE R, uBYTE G, uBYTE B) {
 
     std::vector<uint8_t> pixels(h * surface->pitch, 0);
 
-    for (int i = 0; i < dw; i++) {
-        for (int j = 0; j < dh; j++) {
+    for (int i = 0; i < dw; i++)
+    {
+        for (int j = 0; j < dh; j++)
+        {
             pixels[(x * dw) + (y * dh)] = R;
             pixels[(x * dw) + (y * dh)] = G;
             pixels[(x * dw) + (y * dh)] = B;
@@ -817,9 +984,8 @@ void PPU::RenderPixel(int x, int y, uBYTE R, uBYTE G, uBYTE B) {
     memcpy(surface->pixels, pixels.data(), surface->pitch * surface->h);
     SDL_UnlockSurface(surface);
 
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
 
     SDL_RenderCopy(renderer, texture, &target, &target);
     SDL_DestroyTexture(texture);
-
 }

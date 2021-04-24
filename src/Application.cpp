@@ -1,14 +1,15 @@
 #include "Application.h"
 
-Application::Application() {
-
+Application::Application()
+{
 }
 
-Application::~Application() {
-
+Application::~Application()
+{
 }
 
-bool Application::OnInit() {
+bool Application::OnInit()
+{
     gui = new GUI();
     gui->Show(true);
 

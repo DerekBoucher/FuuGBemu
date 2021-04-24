@@ -9,10 +9,11 @@
 #include <wx/grid.h>
 #include <map>
 
-class MemoryViewer : public wxWindow {
+class MemoryViewer : public wxWindow
+{
 
 public:
-    MemoryViewer(wxWindow*, Memory*);
+    MemoryViewer(wxWindow *, Memory *);
     ~MemoryViewer();
 
 private:

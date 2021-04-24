@@ -1,10 +1,12 @@
 #include <wx/app.h>
 #include <SDL.h>
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv)
+{
 
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        wxPrintf("Error occured during SDL2 initialization: %s\n", SDL_GetError());
+    if (SDL_Init(SDL_INIT_VIDEO) < 0)
+    {
+        printf("Error occured during SDL2 initialization: %s\n", SDL_GetError());
         return -1;
     }
 

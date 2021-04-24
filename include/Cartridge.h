@@ -12,8 +12,8 @@
 class Cartridge
 {
 public:
-    explicit Cartridge(FILE* input);
-    Cartridge(const Cartridge&);
+    explicit Cartridge(FILE *input);
+    Cartridge(const Cartridge &);
     ~Cartridge();
 
     bool attributes[NUM_ATTRIBUTES];
@@ -27,9 +27,10 @@ public:
     uint64_t romSize;
     uint64_t ramSize;
 
-    uBYTE* m_Rom;
+    uBYTE *m_Rom;
 
-    Cartridge& operator=(const Cartridge& other) {
+    Cartridge &operator=(const Cartridge &other)
+    {
         memcpy(this->attributes, other.attributes, NUM_ATTRIBUTES);
         this->currentRamBank = other.currentRamBank;
         this->currentRomBank = other.romBankCount;

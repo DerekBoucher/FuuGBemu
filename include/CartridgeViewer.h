@@ -5,15 +5,15 @@
 
 #include <wx/wx.h>
 
-class CartridgeViewer : public wxWindow {
+class CartridgeViewer : public wxWindow
+{
 
 public:
-    CartridgeViewer(wxWindow*, Cartridge*);
+    CartridgeViewer(wxWindow *, Cartridge *);
     ~CartridgeViewer();
+
 private:
-    Cartridge* cartRef;
-
+    Cartridge *cartRef;
 };
-
 
 #endif

@@ -1,16 +1,19 @@
 #include "Cartridge.h"
 
-Cartridge::Cartridge(FILE* input) {
+Cartridge::Cartridge(FILE *input)
+{
     currentRomBank = 0x01;
     currentRamBank = 0x01;
 
-    for (int i = 0; i < NUM_ATTRIBUTES; i++) {
+    for (int i = 0; i < NUM_ATTRIBUTES; i++)
+    {
         attributes[i] = false;
     }
 
     fseek(input, 0x147, SEEK_SET);
 
-    switch (fgetc(input)) {
+    switch (fgetc(input))
+    {
     case 0x00:
         attributes[ROM_ONLY] = true;
         break;
@@ -43,15 +46,15 @@ Cartridge::Cartridge(FILE* input) {
         attributes[BATTERY] = true;
         break;
     case 0x0B:
-        wxPrintf("Unsupported cart type: %x", fgetc(input));
+        printf("Unsupported cart type: %x", fgetc(input));
         wxExit();
         break;
     case 0x0C:
-        wxPrintf("Unsupported cart type: %x", fgetc(input));
+        printf("Unsupported cart type: %x", fgetc(input));
         wxExit();
         break;
     case 0x0D:
-        wxPrintf("Unsupported cart type: %x", fgetc(input));
+        printf("Unsupported cart type: %x", fgetc(input));
         wxExit();
         break;
     case 0x0F:
@@ -117,19 +120,19 @@ Cartridge::Cartridge(FILE* input) {
         attributes[BATTERY] = true;
         break;
     case 0xFC:
-        wxPrintf("Unsupported cart type: %x", fgetc(input));
+        printf("Unsupported cart type: %x", fgetc(input));
         wxExit();
         break;
     case 0xFD:
-        wxPrintf("Unsupported cart type: %x", fgetc(input));
+        printf("Unsupported cart type: %x", fgetc(input));
         wxExit();
         break;
     case 0xFE:
-        wxPrintf("Unsupported cart type: %x", fgetc(input));
+        printf("Unsupported cart type: %x", fgetc(input));
         wxExit();
         break;
     case 0xFF:
-        wxPrintf("Unsupported cart type: %x", fgetc(input));
+        printf("Unsupported cart type: %x", fgetc(input));
         wxExit();
         break;
     default:
@@ -231,14 +234,14 @@ Cartridge::Cartridge(FILE* input) {
     fread(m_Rom, 0x1, romSize, input);
 }
 
-Cartridge::Cartridge(const Cartridge& other)
+Cartridge::Cartridge(const Cartridge &other)
     : currentRamBank(other.currentRamBank),
-    currentRomBank(other.currentRomBank),
-    romBankCount(other.romBankCount),
-    ramBankCount(other.ramBankCount),
-    ramBankSize(other.ramBankSize),
-    romSize(other.romSize),
-    ramSize(other.ramSize)
+      currentRomBank(other.currentRomBank),
+      romBankCount(other.romBankCount),
+      ramBankCount(other.ramBankCount),
+      ramBankSize(other.ramBankSize),
+      romSize(other.romSize),
+      ramSize(other.ramSize)
 {
     m_Rom = new uBYTE[romSize];
     memcpy(m_Rom, other.m_Rom, romSize);

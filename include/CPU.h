@@ -9,9 +9,9 @@
 class CPU
 {
 public:
-    explicit CPU(Memory*);
-    CPU(CPU&) = delete;
-    virtual ~CPU();
+    explicit CPU(Memory *);
+    CPU(CPU &) = delete;
+    ~CPU();
 
     bool Halted;
     bool Paused;
@@ -21,7 +21,8 @@ public:
     void Halt();
     int ExecuteNextOpCode();
 
-    enum opCode {
+    enum opCode
+    {
         NOP = 0x00,             //No instruction
         LD_16IMM_BC = 0x01,     //Load immediate 16-bit value nn into BC
         LD_A_adrBC = 0x02,      //Load Contents of A into the location pointed by BC
@@ -541,22 +542,27 @@ public:
     };
 
 private:
-    union reg {
+    union reg
+    {
         uWORD data;
-        struct {
+        struct
+        {
             uBYTE lo;
             uBYTE hi;
         };
 
-        void operator=(uWORD data) {
+        void operator=(uWORD data)
+        {
             this->data = data;
         }
 
-        reg(int data) {
+        reg(int data)
+        {
             this->data = data;
         }
 
-        reg() {
+        reg()
+        {
             this->data = 0x0000;
         }
     };
@@ -573,7 +579,7 @@ private:
     bool IME;
     int cyclesExecuted;
     int dividerRegisterCounter;
-    Memory* memoryUnit;
+    Memory *memoryUnit;
     uBYTE byte;
 
     uWORD increment16BitRegister(uWORD);

@@ -7,6 +7,8 @@
 class Memory
 {
 
+    friend class MemoryViewer;
+
 public:
     explicit Memory(Cartridge *);
     Memory(const Memory &);

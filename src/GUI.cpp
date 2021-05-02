@@ -88,9 +88,9 @@ void GUI::OnClickDebugger(wxCommandEvent &e)
         e.Skip();
         return;
     }
+    gameboy->Pause();
     Disable();
     debugger = new Debugger(this, gameboy, gameboy->GetMemory(), gameboy->GetCartridge());
-    gameboy->Pause();
     debugger->Show();
     e.Skip();
 }

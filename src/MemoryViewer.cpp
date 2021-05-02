@@ -26,29 +26,104 @@ MemoryViewer::MemoryViewer(wxWindow *parent, Memory *memory) : wxWindow(parent, 
 
     wxArrayString opCodeList;
     wxString memoryString = "";
+    char *section = new char[10];
+    char *PC = new char[5];
+    char *buffer = new char[2];
+    char *extBuffer = new char[15];
 
-    for (int i = 0; i < 0x1000; i++)
+    for (int i = 0; i < 0x10000; i++)
     {
-        char *PC = new char[5];
+
+        bool formatAsOpcode = false;
+
+        if (i < 0x4000)
+        {
+            sprintf(section, "ROM0: ");
+            formatAsOpcode = true;
+        }
+        else if (i < 0x8000)
+        {
+            sprintf(section, "ROM%X: ", memory->cart->currentRomBank);
+            formatAsOpcode = true;
+        }
+        else if (i < 0xA000)
+        {
+            sprintf(section, "VRAM:  ");
+        }
+        else if (i < 0xC000)
+        {
+            sprintf(section, "RAM%X: ", memory->cart->currentRamBank);
+            formatAsOpcode = true;
+        }
+        else if (i < 0xD000)
+        {
+            sprintf(section, "WRAM0: ");
+            formatAsOpcode = true;
+        }
+        else if (i < 0xE000)
+        {
+            sprintf(section, "WRAM1: ");
+            formatAsOpcode = true;
+        }
+        else if (i < 0xFE00)
+        {
+            sprintf(section, "ECHO: ");
+            formatAsOpcode = true;
+        }
+        else if (i < 0xFEA0)
+        {
+            sprintf(section, "OAM:   ");
+        }
+        else if (i < 0xFF00)
+        {
+            sprintf(section, "N/A:   ");
+        }
+        else if (i < 0xFF80)
+        {
+            sprintf(section, "I/O:   ");
+        }
+        else if (i < 0xFFFF)
+        {
+            sprintf(section, "HRAM: ");
+            formatAsOpcode = true;
+        }
+        else
+        {
+            sprintf(section, "IR:    ");
+        }
+
+        // memoryString += section;
+
         sprintf(PC, "%04X\t", i);
-        opCodeList.Add(PC + OpCodeStrings[memory->Read(i, true)]);
-        delete PC;
-        if (i == 0)
+        sprintf(section, "%s%s", section, PC);
+
+        if (formatAsOpcode)
+            opCodeList.Add(section + OpCodeStrings[memory->Read(i, true)]);
+        else
         {
-            memoryString += "0000  ";
+            sprintf(extBuffer, "%s%02X", section, memory->Read(i, true));
+            opCodeList.Add(extBuffer);
         }
-        else if (i % 0x10 == 0)
-        {
-            char *buffer = new char[6];
-            sprintf(buffer, "\n%04X  ", i);
-            memoryString += buffer;
-            delete buffer;
-        }
-        char *buffer = new char[2];
-        sprintf(buffer, "%02X ", memory->Read(i, true));
-        memoryString += buffer;
-        delete buffer;
+
+        // if (i == 0)
+        // {
+        //     memoryString += "0000  ";
+        // }
+        // else if (i % 0x10 == 0)
+        // {
+        //     sprintf(extBuffer, "\n%04X  ", i);
+        //     memoryString += extBuffer;
+        // }
+
+        // sprintf(buffer, "%02X ", memory->Read(i, true));
+        // memoryString += buffer;
     }
+
+    // Clean up
+    delete section;
+    delete PC;
+    delete buffer;
+    delete extBuffer;
 
     wxListBox *programTextBox = new wxListBox(programPane, wxID_ANY, wxDefaultPosition, wxDefaultSize, opCodeList);
     programTextBox->SetFont(font);

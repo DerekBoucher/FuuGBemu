@@ -22,7 +22,7 @@ Gameboy::~Gameboy()
 
 void Gameboy::Run()
 {
-    const int MaxCycles = 69905;
+    const int MaxCycles = 66905;
 
     while (running)
     {

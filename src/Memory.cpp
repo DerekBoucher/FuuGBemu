@@ -170,7 +170,7 @@ void Memory::Write(uWORD addr, uBYTE data)
         }
         else if (addr == 0xFF0F) // Interrupt Flag Register
         {
-            memory[addr] = data;
+            memory[addr] = data | 0xE0;
         }
         else if (addr == 0xFF10) // Channel 1 Sweep Register
         {
@@ -411,7 +411,12 @@ uBYTE Memory::Read(uWORD addr, bool debugRead)
     }
     else if ((addr >= 0x8000) && (addr < 0xA000) && !dmaTransferInProgress) // Video RAM
     {
-        return memory[addr];
+        uBYTE mode = getStatMode();
+
+        if (mode == 3)
+            return memory[addr];
+        else
+            return 0xFF;
     }
     else if ((addr >= 0xA000) && (addr < 0xC000) && !dmaTransferInProgress) // External RAM
     {

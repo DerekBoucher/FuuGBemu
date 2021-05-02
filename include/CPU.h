@@ -577,6 +577,7 @@ private:
     reg temp;
 
     bool IME;
+    bool buggedHalt;
     int cyclesExecuted;
     int dividerRegisterCounter;
     Memory *memoryUnit;

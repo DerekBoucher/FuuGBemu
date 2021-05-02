@@ -14,6 +14,7 @@ CPU::CPU(Memory *mem) : AF(0x0000), BC(0x0000), DE(0x0000), HL(0x0000), temp(0x0
     Paused = false;
     Halted = false;
     IME = false;
+    buggedHalt = false;
 }
 
 CPU::~CPU()
@@ -29,6 +30,12 @@ int CPU::ExecuteNextOpCode()
 {
 
     byte = memoryUnit->Read(PC++);
+
+    if (buggedHalt)
+    {
+        PC--;
+        buggedHalt = false;
+    }
 
     switch (byte)
     {
@@ -801,7 +808,20 @@ int CPU::ExecuteNextOpCode()
 
     case HALT:
         //4 Clock Cycles
-        Halted = true;
+        if (IME)
+            Halted = true;
+        else
+        {
+            uBYTE IE = memoryUnit->DmaRead(INTERUPT_EN_REGISTER_ADR);
+            uBYTE IF = memoryUnit->DmaRead(INTERUPT_FLAG_REG);
+
+            if (!(IE & IF & 0x1F))
+            {
+                Halted = true;
+            }
+
+            buggedHalt = true;
+        }
         cyclesExecuted = 4;
         break;
 
@@ -4396,6 +4416,12 @@ uBYTE CPU::adjustDAA(uBYTE reg)
 
 void CPU::Halt()
 {
+    if (buggedHalt)
+    {
+        buggedHalt = false;
+        return;
+    }
+
     uBYTE IE = memoryUnit->DmaRead(INTERUPT_EN_REGISTER_ADR);
     uBYTE IF = memoryUnit->DmaRead(INTERUPT_FLAG_REG);
     if ((IF & (1 << 0)) && (IE & (1 << 0))) //V-Blank

@@ -80,11 +80,11 @@ void PPU::UpdateGraphics(int cycles)
         {
             DrawScanline();
         }
-        else if (currentScanline > 144 && currentScanline < 153)
+        else if (currentScanline >= 144 && currentScanline < 154)
         {
             memoryRef->RequestInterupt(0);
         }
-        else if (currentScanline == 153)
+        else if (currentScanline == 154)
         {
             memoryRef->DmaWrite(0xFF44, 0x00);
             return;
@@ -163,7 +163,7 @@ void PPU::RenderTiles()
             continue;
         }
 
-        uBYTE xPos = pixel + scrollX;
+        uBYTE xPos = pixel + (scrollX / 8);
 
         uWORD tileColumn = xPos / 8;
 

@@ -4333,7 +4333,7 @@ void CPU::CheckInterupts()
         Temp.data = PC;
         memoryUnit->Write(--SP, Temp.hi);
         memoryUnit->Write(--SP, Temp.lo);
-        PC = VBLANK_INT;
+        PC = VBLANK_INTERUPT_VECTOR;
         memoryUnit->UpdateTimers(8);
     }
     else if ((IF & (1 << 1)) && (IE & (1 << 1))) // LCDC
@@ -4344,7 +4344,7 @@ void CPU::CheckInterupts()
         Temp.data = PC;
         memoryUnit->Write(--SP, Temp.hi);
         memoryUnit->Write(--SP, Temp.lo);
-        PC = LCDC_INT;
+        PC = LCDC_INTERUPT_VECTOR;
         memoryUnit->UpdateTimers(8);
     }
     else if ((IF & (1 << 2)) && (IE & (1 << 2))) // Timer Overflow
@@ -4355,7 +4355,7 @@ void CPU::CheckInterupts()
         Temp.data = PC;
         memoryUnit->Write(--SP, Temp.hi);
         memoryUnit->Write(--SP, Temp.lo);
-        PC = TIMER_OVER_INT;
+        PC = TIMER_OVER_INTERUPT_VECTOR;
         memoryUnit->UpdateTimers(8);
     }
     else if ((IF & (1 << 3)) && (IE & (1 << 3))) // Serial I/O Complete
@@ -4366,7 +4366,7 @@ void CPU::CheckInterupts()
         Temp.data = PC;
         memoryUnit->Write(--SP, Temp.hi);
         memoryUnit->Write(--SP, Temp.lo);
-        PC = SER_TRF_INT;
+        PC = SER_TRF_INTERUPT_VECTOR;
         memoryUnit->UpdateTimers(8);
     }
     else if ((IF & (1 << 4)) && (IE & (1 << 4))) //Pin 10 - 13 hi to lo (Control Input)
@@ -4377,7 +4377,7 @@ void CPU::CheckInterupts()
         Temp.data = PC;
         memoryUnit->Write(--SP, Temp.hi);
         memoryUnit->Write(--SP, Temp.lo);
-        PC = CONTROL_INT;
+        PC = CONTROL_INTERUPT_VECTOR;
         memoryUnit->UpdateTimers(8);
     }
 }

@@ -39,6 +39,7 @@ private:
 
     Timestamp CurrentTimestamp();
     void WaitForFrame(Timestamp);
+    void HandleJoypadInput();
 
     void wait();
 };

@@ -33,3 +33,7 @@ void Debugger::OnClose(wxCloseEvent &e)
     Destroy();
     e.Skip();
 }
+
+void Debugger::Update(Gameboy *gb, Memory *m, Cartridge *c)
+{
+}

@@ -13,7 +13,9 @@ public:
     Application();
     ~Application();
 
+    wxDECLARE_EVENT_TABLE();
     virtual bool OnInit();
+    void OnKeyDown(wxKeyEvent &);
 
 private:
     GUI *gui;

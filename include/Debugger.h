@@ -18,6 +18,8 @@ public:
     Debugger(wxFrame *, Gameboy *, Memory *, Cartridge *);
     ~Debugger();
 
+    void Update(Gameboy *, Memory *, Cartridge *);
+
 private:
     Gameboy *gameboyRef;
 

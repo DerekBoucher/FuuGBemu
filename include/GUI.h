@@ -14,6 +14,8 @@ public:
     GUI();
     ~GUI();
 
+    void OnKeyDown(wxKeyEvent &);
+
     wxDECLARE_EVENT_TABLE();
 
 private:

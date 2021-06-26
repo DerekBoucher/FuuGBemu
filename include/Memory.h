@@ -8,6 +8,7 @@ class Memory
 {
 
     friend class MemoryViewer;
+    friend class GUI;
 
 public:
     explicit Memory(Cartridge *);

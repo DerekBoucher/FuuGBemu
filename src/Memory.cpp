@@ -497,13 +497,13 @@ void Memory::DmaWrite(uWORD addr, uBYTE data)
 
 void Memory::UpdateTimers(int cycles)
 {
-    uBYTE TAC = memory[0xFF07];
+    uBYTE TAC = memory[TAC_ADR];
 
     // Update the divider register
     dividerRegisterCounter += cycles;
     if (dividerRegisterCounter >= 256)
     {
-        memory[0xFF04]++;
+        memory[DIV_ADR]++;
         dividerRegisterCounter -= 256;
     }
 
@@ -535,14 +535,14 @@ void Memory::UpdateTimers(int cycles)
             timerCounter += remainder;
 
             // Timer Overflow
-            if (memory[0xFF05] == 0xFF)
+            if (memory[TIMA_ADR] == 0xFF)
             {
-                memory[0xFF05] = memory[0xFF06];
-                RequestInterupt(2);
+                memory[TIMA_ADR] = memory[TIM_MOD_ADR];
+                RequestInterupt(TIMER_OVERFLOW_INT);
             }
             else
             {
-                memory[0xFF05]++;
+                memory[TIMA_ADR]++;
             }
         }
     }
@@ -657,23 +657,23 @@ void Memory::RequestInterupt(int code)
 
     switch (code)
     {
-    case 0:
+    case VBLANK_INT:
         IF |= 0x01;
         memory[0xFF0F] = IF;
         break;
-    case 1:
+    case LCDC_INT:
         IF |= 0x02;
         memory[0xFF0F] = IF;
         break;
-    case 2:
+    case TIMER_OVERFLOW_INT:
         IF |= 0x04;
         memory[0xFF0F] = IF;
         break;
-    case 3:
+    case SER_TRF_INT:
         IF |= 0x08;
         memory[0xFF0F] = IF;
         break;
-    case 4:
+    case CONTROL_INT:
         IF |= 0x10;
         memory[0xFF0F] = IF;
         break;

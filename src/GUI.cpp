@@ -88,9 +88,85 @@ void GUI::OnClickDebugger(wxCommandEvent &e)
         e.Skip();
         return;
     }
+
     gameboy->Pause();
     Disable();
     debugger = new Debugger(this, gameboy, gameboy->GetMemory(), gameboy->GetCartridge());
     debugger->Show();
     e.Skip();
+}
+
+void GUI::OnKeyDown(wxKeyEvent &event)
+{
+    if (event.GetEventType() != wxEVT_KEY_DOWN)
+    {
+        return;
+    }
+
+    if (gameboy == nullptr)
+    {
+        return;
+    }
+
+    Memory *gameboyMemory = gameboy->GetMemory();
+
+    uBYTE joypad = gameboyMemory->memory[JOYPAD_INTERUPT_REG];
+
+    int keyPressed = event.GetKeyCode();
+
+    switch (keyPressed)
+    {
+    case WXK_UP:
+        joypad = joypad & 0xEB;
+        gameboyMemory->memory[JOYPAD_INTERUPT_REG] = joypad;
+        gameboyMemory->RequestInterupt(CONTROL_INT);
+        break;
+
+    case WXK_DOWN:
+        joypad = joypad & 0xE7;
+        gameboyMemory->memory[JOYPAD_INTERUPT_REG] = joypad;
+        gameboyMemory->RequestInterupt(CONTROL_INT);
+        break;
+
+    case WXK_LEFT:
+        joypad = joypad & 0xED;
+        gameboyMemory->memory[JOYPAD_INTERUPT_REG] = joypad;
+        gameboyMemory->RequestInterupt(CONTROL_INT);
+        break;
+
+    case WXK_RIGHT:
+        joypad = joypad & 0xEE;
+        gameboyMemory->memory[JOYPAD_INTERUPT_REG] = joypad;
+        gameboyMemory->RequestInterupt(CONTROL_INT);
+        break;
+
+    case Z_KEY: // A
+        joypad = joypad & 0xDB;
+        gameboyMemory->memory[JOYPAD_INTERUPT_REG] = joypad;
+        gameboyMemory->RequestInterupt(CONTROL_INT);
+        break;
+
+    case X_KEY: // B
+        joypad = joypad & 0xD7;
+        gameboyMemory->memory[JOYPAD_INTERUPT_REG] = joypad;
+        gameboyMemory->RequestInterupt(CONTROL_INT);
+        break;
+
+    case WXK_RETURN: // Start
+        joypad = joypad & 0xDD;
+        gameboyMemory->memory[JOYPAD_INTERUPT_REG] = joypad;
+        gameboyMemory->RequestInterupt(CONTROL_INT);
+        break;
+
+    case WXK_SHIFT: // Select
+        joypad = joypad & 0xDE;
+        gameboyMemory->memory[JOYPAD_INTERUPT_REG] = joypad;
+        gameboyMemory->RequestInterupt(CONTROL_INT);
+        break;
+
+    default:
+        break;
+    }
+
+    event.Skip();
 }

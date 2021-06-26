@@ -72,7 +72,7 @@ void PPU::UpdateGraphics(int cycles)
 
     if (scanlineCounter <= 0) // Time to render new frame
     {
-        currentScanline = memoryRef->DmaRead(0xFF44);
+        currentScanline = memoryRef->DmaRead(LY_ADR);
 
         scanlineCounter = 456;
 
@@ -82,15 +82,15 @@ void PPU::UpdateGraphics(int cycles)
         }
         else if (currentScanline >= 144 && currentScanline < 154)
         {
-            memoryRef->RequestInterupt(0);
+            memoryRef->RequestInterupt(VBLANK_INT);
         }
-        else if (currentScanline == 154)
+        else
         {
-            memoryRef->DmaWrite(0xFF44, 0x00);
+            memoryRef->DmaWrite(LY_ADR, 0x00);
             return;
         }
 
-        memoryRef->DmaWrite(0xFF44, memoryRef->DmaRead(0xFF44) + 1);
+        memoryRef->DmaWrite(LY_ADR, memoryRef->DmaRead(LY_ADR) + 1);
     }
 }
 
@@ -101,10 +101,6 @@ void PPU::DrawScanline()
     if (LCDC & (1 << 0))
     {
         RenderTiles();
-    }
-    if ((LCDC & (1 << 5)) && (LCDC & (1 << 0)))
-    {
-        RenderWindow();
     }
     if (LCDC & (1 << 1))
     {
@@ -119,12 +115,15 @@ void PPU::RenderTiles()
     uWORD tileDataPtr = 0x0;
     uWORD tileMapPtr = 0x0;
 
+    bool windowEnabled = false;
     bool unsignedID = false;
 
     // Determine The offsets to use when retrieving the Tile Identifiers from
     // Tile Map address space.
-    uBYTE scrollX = memoryRef->DmaRead(0xFF43);
-    uBYTE scrollY = memoryRef->DmaRead(0xFF42);
+    uBYTE scrollX = memoryRef->DmaRead(SCR_X_ADR);
+    uBYTE scrollY = memoryRef->DmaRead(SCR_Y_ADR);
+    uBYTE winX = memoryRef->DmaRead(0xFF4B) - 7;
+    uBYTE winY = memoryRef->DmaRead(0xFF4A);
 
     // Determine base address of tile data for BG & window
     if (LCDC & (1 << 4))
@@ -148,22 +147,45 @@ void PPU::RenderTiles()
         tileMapPtr = 0x9800;
     }
 
+    if (LCDC & (1 << 5))
+    {
+        windowEnabled = true;
+    }
+    else
+    {
+        windowEnabled = false;
+    }
+
     // Determine the current scanline we are on
-    currentScanline = memoryRef->DmaRead(0xFF44);
+    currentScanline = memoryRef->DmaRead(LY_ADR);
 
     // Calculate which row in the tile to render
-    uBYTE yPos = scrollY + currentScanline;
+    uBYTE yPos;
+
+    if (!windowEnabled)
+        yPos = scrollY + currentScanline;
+    else
+        yPos = currentScanline - winY;
+
     uWORD tileRow = (yPos / 8) * 32;
 
     // Start Rendering the scanline
     for (int pixel = 0; pixel < 160; pixel++)
     {
-        if (currentScanline < 0 || currentScanline > 143)
+        if (currentScanline < 0 || currentScanline > 144)
         {
             continue;
         }
 
         uBYTE xPos = pixel + (scrollX / 8);
+
+        if (windowEnabled)
+        {
+            if (pixel >= winX)
+            {
+                xPos = pixel - winX;
+            }
+        }
 
         uWORD tileColumn = xPos / 8;
 
@@ -382,7 +404,7 @@ void PPU::RenderWindow()
     }
 
     // Determine the current scanline we are on
-    currentScanline = memoryRef->DmaRead(0xFF44);
+    currentScanline = memoryRef->DmaRead(LY_ADR);
 
     // Calculate which row in the tile to render
     uBYTE yPos = winY + currentScanline;
@@ -607,7 +629,7 @@ void PPU::RenderSprites()
         bool xFlip = (sprites[i].attributes & (1 << 5));
         bool priority = !(sprites[i].attributes & (1 << 7));
 
-        currentScanline = memoryRef->DmaRead(0xFF44);
+        currentScanline = memoryRef->DmaRead(LY_ADR);
 
         uBYTE ysize = 8;
 
@@ -836,13 +858,13 @@ void PPU::SetLCDStatus()
     if (!(LCDC & (1 << 7)))
     {
         scanlineCounter = 456;
-        memoryRef->DmaWrite(0xFF44, 0x00);
+        memoryRef->DmaWrite(LY_ADR, 0x00);
         STAT &= 0xFC;
         memoryRef->DmaWrite(STAT_ADR, STAT);
         return;
     }
 
-    currentScanline = memoryRef->DmaRead(0xFF44);
+    currentScanline = memoryRef->DmaRead(LY_ADR);
     uBYTE currentMode = STAT & 0x03;
 
     uBYTE mode = 0;
@@ -888,15 +910,15 @@ void PPU::SetLCDStatus()
 
     if (reqInt && (mode != currentMode))
     {
-        memoryRef->RequestInterupt(1);
+        memoryRef->RequestInterupt(LCDC_INT);
     }
 
-    if (memoryRef->DmaRead(0xFF44) == memoryRef->DmaRead(0xFF45))
+    if (memoryRef->DmaRead(LY_ADR) == memoryRef->DmaRead(LYC_ADR))
     {
-        STAT |= 0x04;
+        STAT |= (1 << 2);
         if (STAT & (1 << 6))
         {
-            memoryRef->RequestInterupt(1);
+            memoryRef->RequestInterupt(LCDC_INT);
         }
     }
     else
@@ -923,13 +945,12 @@ PPU::sprite *PPU::ProcessSprites()
 
     for (uBYTE i = 40; i != 255; i--)
     {
-
         uBYTE index = i * 4;
 
-        processedSprites[i].yPos = memoryRef->DmaRead(0xFE00 + index) - 0x10;
-        processedSprites[i].xPos = memoryRef->DmaRead(0xFE00 + index + 1);
-        processedSprites[i].patternNumber = memoryRef->DmaRead(0xFE00 + index + 2);
-        processedSprites[i].attributes = memoryRef->DmaRead(0xFE00 + index + 3);
+        processedSprites[i].yPos = memoryRef->DmaRead(OAM_ADR + index) - 0x10;
+        processedSprites[i].xPos = memoryRef->DmaRead(OAM_ADR + index + 1);
+        processedSprites[i].patternNumber = memoryRef->DmaRead(OAM_ADR + index + 2);
+        processedSprites[i].attributes = memoryRef->DmaRead(OAM_ADR + index + 3);
     }
 
     // for(uBYTE i = 0; i < 40; i++) {

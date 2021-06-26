@@ -17,6 +17,15 @@ typedef short sWORD;
 
 #define LCDC_ADR 0xFF40
 #define STAT_ADR 0xFF41
+#define LY_ADR 0xFF44
+#define OAM_ADR 0xFE00
+#define SCR_X_ADR 0xFF43
+#define SCR_Y_ADR 0xFF42
+#define LYC_ADR 0xFF45
+#define TAC_ADR 0xFF07
+#define DIV_ADR 0xFF04
+#define TIMA_ADR 0xFF05
+#define TIM_MOD_ADR 0xFF06
 
 #define CPU_FLAG_BIT_SET(int) CPU::flagSet(int)
 #define CPU_FLAG_BIT_TEST(int) CPU::flagTest(int)
@@ -25,12 +34,22 @@ typedef short sWORD;
 #define INTERUPT_EN_REGISTER_ADR 0xFFFF
 #define INTERUPT_FLAG_REG 0xFF0F
 #define TIMER_DIV_REG 0xFF04
+#define JOYPAD_INTERUPT_REG 0xFF00
 
-#define VBLANK_INT 0x0040
-#define LCDC_INT 0x0048
-#define TIMER_OVER_INT 0x0050
-#define SER_TRF_INT 0x0058
-#define CONTROL_INT 0x0060
+#define VBLANK_INTERUPT_VECTOR 0x0040
+#define LCDC_INTERUPT_VECTOR 0x0048
+#define TIMER_OVER_INTERUPT_VECTOR 0x0050
+#define SER_TRF_INTERUPT_VECTOR 0x0058
+#define CONTROL_INTERUPT_VECTOR 0x0060
+
+#define VBLANK_INT 0
+#define LCDC_INT 1
+#define TIMER_OVERFLOW_INT 2
+#define SER_TRF_INT 3
+#define CONTROL_INT 4
+
+#define Z_KEY 90
+#define X_KEY 88
 
 #define Z_FLAG 7
 #define N_FLAG 6

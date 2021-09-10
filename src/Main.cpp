@@ -1,0 +1,123 @@
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+
+#include <iostream>
+#include <string.h>
+#include <fstream>
+#include <csignal>
+
+#include "Gameboy.hpp"
+
+#define NATIVE_SIZE_X 160
+#define NATIVE_SIZE_Y 144
+#define SCALE 5
+
+GLFWwindow* window;
+
+void signalHandler(int signal) {
+    fprintf(stdout, "caught interrupt signal, terminating.\n");
+    glfwSetWindowShouldClose(window, GL_TRUE);
+}  
+
+void printUsage() {
+    fprintf(stdout, "FuuGBemu\n");
+    fprintf(stdout, "Usage:\n");
+    fprintf(stdout, "\tFuuGBemu [OPTIONS] <rom path>\n");
+    fprintf(stdout, "Options:\n");
+}
+
+int main(int argc, char** argv) {
+
+    // If user did not specify rom path, remind them to :)
+    if (argc < 2) {
+        fprintf(stderr, "missing rom path\n");
+        printUsage();
+        return EXIT_FAILURE;
+    }
+
+    std::ifstream romFile(argv[1], std::ios::in);
+
+    if (!romFile.good()) {
+        fprintf(stderr, "error reading rom file: %s\n", strerror(errno));
+        printUsage();
+        return EXIT_FAILURE;
+    }
+
+    // Read rom data
+    char romData[MAX_CART_SIZE];
+    romFile.read(romData, MAX_CART_SIZE);
+
+    // Set interrupt signal handler
+    signal(SIGINT, signalHandler);
+
+    // Initialize glfw
+    if (!glfwInit()) {
+        const char* errMsg[1024];
+        glfwGetError(errMsg);
+        fprintf(stderr, "could not initialize glfw: %s\n", *errMsg);
+        return EXIT_FAILURE;
+    }
+
+    // Use OpenGL 3.3 Core profile
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+
+    // Create window
+    window = glfwCreateWindow(NATIVE_SIZE_X * SCALE,
+        NATIVE_SIZE_Y * SCALE,
+        "FuuGBemu",
+        NULL,
+        NULL);
+
+    // If something went wrong, report the error
+    if (!window) {
+        const char* errMsg[1024];
+        glfwGetError(errMsg);
+        fprintf(stderr, "could not create glfw window: %s\n", *errMsg);
+        glfwTerminate();
+        return EXIT_FAILURE;
+    }
+
+    // Make the created window as the current context
+    glfwMakeContextCurrent(window);
+
+    GLenum glewInitCode = glewInit();
+    if (glewInitCode != GLEW_OK) {
+        fprintf(stderr, "could not initialize glew: %s\n", glewGetErrorString(glewInitCode));
+        glfwTerminate();
+        return EXIT_FAILURE;
+    }
+
+    // Create a gameboy instance
+    Gameboy gameboy = Gameboy((uBYTE*)romData, window);
+
+    // Set viewport
+    glViewport(0, 0, NATIVE_SIZE_X * SCALE, NATIVE_SIZE_Y * SCALE);
+
+    // Clear the background to white
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glfwSwapBuffers(window);
+
+    // Before we start the gameboy, unbind the context from the
+    // main thread. The gameboy thread will handle it from here
+    glfwMakeContextCurrent(NULL);
+
+    // Create a gameboy instance, then start it.
+    gameboy.Start();
+
+    // Here all we want the main thread to do
+    // is handle window events.
+    // The gameboy will handle swapping of buffers
+    while(!glfwWindowShouldClose(window)) {
+        glfwPollEvents();
+        std::this_thread::sleep_for(std::chrono::duration(std::chrono::milliseconds(100)));
+    }
+
+    gameboy.Stop();
+    glfwTerminate();
+
+    return EXIT_SUCCESS;
+}

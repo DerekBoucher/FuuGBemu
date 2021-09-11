@@ -1,6 +1,6 @@
 #include "Memory.hpp"
 
-Memory::Memory() {
+Memory::Memory() { 
 
 }
 
@@ -9,7 +9,7 @@ Memory::~Memory() {
 }
 
 void Memory::ReadRom(uBYTE data[MAX_CART_SIZE]) {
-    *cartridge = *data;
+    memcpy(cartridge, data, MAX_CART_SIZE);
 
     // Set the rom/ram banks to 1 by default
     currentRamBank = 0x01;
@@ -570,40 +570,40 @@ uBYTE Memory::Read(uWORD addr, bool debugRead)
             {
                 if (romSize > 0x100000)
                 {
-                    switch (currentRamBank)
+                    switch (currentRomBank)
                     {
                     case 0x00:
-                        return rom[addr];
+                        return cartridge[addr];
                         break;
                     case 0x01:
-                        return rom[addr * 0x20];
+                        return cartridge[addr * 0x20];
                         break;
                     case 0x02:
-                        return rom[addr * 0x40];
+                        return cartridge[addr * 0x40];
                         break;
                     case 0x03:
-                        return rom[addr * 0x60];
+                        return cartridge[addr * 0x60];
                         break;
                     default:
-                        return rom[addr];
+                        return cartridge[addr];
                         break;
                     }
                 }
                 else
                 {
-                    return rom[addr];
+                    return cartridge[addr];
                 }
             }
             else
             {
-                return rom[addr];
+                return cartridge[addr];
             }
         }
     }
     else if ((addr >= 0x4000) && (addr < 0x8000) && !dmaTransferInProgress) // Cart ROM Bank n
     {
         translatedAddr = addr - 0x4000;
-        return rom[translatedAddr + (0x4000 * currentRomBank)];
+        return cartridge[translatedAddr + (0x4000 * currentRomBank)];
     }
     else if ((addr >= 0x8000) && (addr < 0xA000) && !dmaTransferInProgress) // Video RAM
     {

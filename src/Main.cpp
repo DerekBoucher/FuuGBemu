@@ -30,7 +30,7 @@ static void GLAPIENTRY MessageCallback( GLenum source,
 void signalHandler(int signal) {
     fprintf(stdout, "caught interrupt signal, terminating.\n");
     glfwSetWindowShouldClose(window, GL_TRUE);
-}  
+}
 
 void printUsage() {
     fprintf(stdout, "FuuGBemu\n");
@@ -48,8 +48,7 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    std::ifstream romFile(argv[1], std::ios::in);
-
+    std::fstream romFile(argv[1], std::ios::in | std::ios::binary);
     if (!romFile.good()) {
         fprintf(stderr, "error reading rom file: %s\n", strerror(errno));
         printUsage();
@@ -75,7 +74,7 @@ int main(int argc, char** argv) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+    //glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
     // Create window
     window = glfwCreateWindow(NATIVE_SIZE_X * SCALE,

@@ -14,6 +14,7 @@ typedef unsigned short uWORD;
 
 #include <iostream>
 #include <map>
+#include <string.h>
 
 #define VBLANK_INT 0
 #define LCDC_INT 1
@@ -46,10 +47,10 @@ public:
     void RequestInterupt(int);
     void UpdateDmaCycles(int);
     void UpdateTimers(int);
+    void ReadRom(uBYTE data[MAX_CART_SIZE]);
     uBYTE Read(uWORD, bool = false);
     uBYTE DmaRead(uWORD);
 
-    void ReadRom(uBYTE data[MAX_CART_SIZE]);
 private:
     void changeRomBank(uWORD, uBYTE);
     void changeRamBank(uBYTE);
@@ -60,10 +61,10 @@ private:
     uBYTE getStatMode();
 
     int dmaCyclesCompleted;
+    int dividerRegisterCounter;
     bool bootRomClosed;
     bool dmaTransferInProgress;
     uWORD translatedAddr;
-    int dividerRegisterCounter;
 
     enum CartAttributes {
         ramEnabled,

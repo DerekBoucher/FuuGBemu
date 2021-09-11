@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/FuuGBemu",
             "args": [
-                "testrom/Tetris.gb",
+                "testrom/Zelda.gb",
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

@@ -29,7 +29,6 @@ public:
     void UnBindContext();
     void Render();
     void AttachShaders(Shader& vs, Shader& fs);
-    void DrawPixel(GLuint x, GLuint y, uBYTE r, uBYTE g, uBYTE b);
     void SwapBuffers();
     void SetMemory(Memory* memory);
     void InitializeGLBuffers();
@@ -45,8 +44,9 @@ private:
 
     struct pixel {
         uBYTE r, g, b;
-    } pixels[NATIVE_SIZE_X][NATIVE_SIZE_Y];
-
+    };
+    
+    pixel pixels[NATIVE_SIZE_X][NATIVE_SIZE_Y];
     uBYTE pixelData[NATIVE_SIZE_X][NATIVE_SIZE_Y];
     uBYTE LCDC;
     uBYTE STAT;
@@ -59,9 +59,13 @@ private:
     void RenderWindow();
     void RenderSprites();
     void SetLCDStatus();
+    void DrawPixels();
+    void DrawPixel(GLuint x, GLuint y, uBYTE r, uBYTE g, uBYTE b);
     sprite *ProcessSprites();
     uBYTE GetStat();
     uBYTE GetLCDC();
+
+    GLfloat positionVertices[NATIVE_SIZE_X * NATIVE_SIZE_Y * 12];
 
     std::unique_ptr<Vao> vao;
     std::unique_ptr<Vbo> positionVBO, colorVBO;

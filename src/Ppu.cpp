@@ -1,19 +1,38 @@
 #include "Ppu.hpp"
 
-static void GLAPIENTRY MessageCallback( GLenum source,
-                    GLenum type,
-                    GLuint id,
-                    GLenum severity,
-                    GLsizei length,
-                    const GLchar* message,
-                    const void* userParam) {
-                        if (type == GL_DEBUG_TYPE_ERROR) {
-                            fprintf( stderr, "** GL ERROR **: type = 0x%x, severity = 0x%x, message = %s\n",
-                                type, severity, message); 
-                        }    
-                    }
+Ppu::Ppu() {
 
-Ppu::Ppu() {}
+    auto x = 0;
+    auto y = 0;
+
+    // Position vertices required for a square / pixel.
+    // Here every pair of float represents an x-y coordinate (i.e. single vertex).
+    // The weird math is to convert from regular video coordinates to
+    // openGL normalized device coordinates.
+    for (auto i = 0; i < (NATIVE_SIZE_X * NATIVE_SIZE_Y * 12); i += 12) {
+        positionVertices[i] = (-1.0f + (xDiv * x));
+        positionVertices[i + 1] = (1.0f - (yDiv * y));
+        positionVertices[i + 2] = (-1.0f + (xDiv * x) + xDiv);
+        positionVertices[i + 3] = (1.0f - (yDiv * y));
+        positionVertices[i + 4] = (-1.0f + (xDiv * x));
+        positionVertices[i + 5] = (1.0f - (yDiv * y) - yDiv);
+        positionVertices[i + 6] = (-1.0f + (xDiv * x) + xDiv);
+        positionVertices[i + 7] = (1.0f - (yDiv * y));
+        positionVertices[i + 8] = (-1.0f + (xDiv * x));
+        positionVertices[i + 9] = (1.0f - (yDiv * y) - yDiv);
+        positionVertices[i + 10] = (-1.0f + (xDiv * x) + xDiv);
+        positionVertices[i + 11] = (1.0f - (yDiv * y) - yDiv);
+
+        x++;
+
+        // There are 12 vertices per pixel, therefore we need to verify
+        // that we traversed a full scanline when x reaches 160.
+        if (x == NATIVE_SIZE_X) {
+            x = 0;
+            y++;
+        }
+    }
+}
 
 Ppu::~Ppu() {}
 
@@ -30,6 +49,9 @@ void Ppu::InitializeGLBuffers() {
     colorVBO = std::unique_ptr<Vbo>(new Vbo());
     vao = std::unique_ptr<Vao>(new Vao());
 
+    // Generate the position vertex buffer (remains static)
+    positionVBO->Generate(positionVertices, sizeof(positionVertices));
+
     // Add the vertex buffers to the vertex array
     vao->AddBuffer(*positionVBO.get(), {0, 2, GL_FLOAT, sizeof(GLfloat) * 2, NULL});
     vao->AddBuffer(*colorVBO.get(), {1, 3, GL_FLOAT, sizeof(GLfloat) * 3, NULL});
@@ -44,11 +66,7 @@ void Ppu::UnBindContext() {
 }
 
 void Ppu::Render() {
-
-    for (auto x = 0; x < NATIVE_SIZE_X; x++)
-        for (auto y = 0; y < NATIVE_SIZE_Y; y++)
-            DrawPixel(x, y, pixels[x][y].r, pixels[x][y].g, pixels[x][y].b);
-
+    DrawPixels();
     glFlush();
     SwapBuffers();
 }
@@ -59,6 +77,48 @@ void Ppu::AttachShaders(Shader& vs, Shader& fs) {
     glAttachShader(ShaderProgram, fs.ID);
     glLinkProgram(ShaderProgram);
     glValidateProgram(ShaderProgram);
+    glUseProgram(ShaderProgram);
+}
+
+void Ppu::DrawPixels() {
+    // Here we define a vec3 color vertex for every vec2 position
+    // vertex that we defined above (i.e. we need 18 floats).
+    GLfloat colorVertices[NATIVE_SIZE_X * NATIVE_SIZE_Y * 18];
+    auto x = 0;
+    auto y = 0;
+    for (auto i = 0; i < (NATIVE_SIZE_X * NATIVE_SIZE_Y * 18); i += 18) {
+        colorVertices[i] = pixels[x][y].r / 255.0f;
+        colorVertices[i + 1] = pixels[x][y].g / 255.0f;
+        colorVertices[i + 2] = pixels[x][y].b / 255.0f;
+        colorVertices[i + 3] = pixels[x][y].r / 255.0f;
+        colorVertices[i + 4] = pixels[x][y].g / 255.0f;
+        colorVertices[i + 5] = pixels[x][y].b / 255.0f;
+        colorVertices[i + 6] = pixels[x][y].r / 255.0f;
+        colorVertices[i + 7] = pixels[x][y].g / 255.0f;
+        colorVertices[i + 8] = pixels[x][y].b / 255.0f;
+        colorVertices[i + 9] = pixels[x][y].r / 255.0f;
+        colorVertices[i + 10] = pixels[x][y].g / 255.0f;
+        colorVertices[i + 11] = pixels[x][y].b / 255.0f;
+        colorVertices[i + 12] = pixels[x][y].r / 255.0f;
+        colorVertices[i + 13] = pixels[x][y].g / 255.0f;
+        colorVertices[i + 14] = pixels[x][y].b / 255.0f;
+        colorVertices[i + 15] = pixels[x][y].r / 255.0f;
+        colorVertices[i + 16] = pixels[x][y].g / 255.0f;
+        colorVertices[i + 17] = pixels[x][y].b / 255.0f;
+
+        x++;
+        if (x == (NATIVE_SIZE_X)) {
+            x = 0;
+            y++;
+        }
+    }
+
+    colorVBO->Generate(colorVertices, sizeof(colorVertices));
+
+    // Finally, draw the pixel
+    vao->Bind();
+    glDrawArrays(GL_TRIANGLES, 0, NATIVE_SIZE_X * NATIVE_SIZE_Y * 12);
+    vao->UnBind();
 }
 
 void Ppu::DrawPixel(GLuint x, GLuint y, uBYTE r, uBYTE g, uBYTE b) {    
@@ -86,10 +146,6 @@ void Ppu::DrawPixel(GLuint x, GLuint y, uBYTE r, uBYTE g, uBYTE b) {
         r / 255.0f, g / 255.0f, b / 255.0f
     };
 
-    // Bind the shader program
-    glUseProgram(ShaderProgram);
-
-    // Generate the vertex buffers
     positionVBO->Generate(positionVertices, sizeof(positionVertices));
     colorVBO->Generate(colorVertices, sizeof(colorVertices));
 

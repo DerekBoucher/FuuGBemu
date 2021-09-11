@@ -39,9 +39,8 @@ void Gameboy::Start() {
 
 void Gameboy::Stop() {
     running = false;
-    if (thread->joinable()) {
+    if (thread->joinable())
         thread->join();
-    }
 }
 
 void Gameboy::Run() {
@@ -89,7 +88,4 @@ void Gameboy::Run() {
         // Render screen
         ppu.Render();
     }
-
-    // Unbind the opengl context
-    ppu.UnBindContext();
 }

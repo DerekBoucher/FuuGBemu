@@ -225,7 +225,7 @@ void Ppu::RenderTiles() {
     // Start Rendering the scanline
     for (int pixel = 0; pixel < 160; pixel++) {
 
-        uBYTE xPos = pixel + (scrollX / 8);
+        uBYTE xPos = pixel + scrollX;
 
         if (windowEnabled && (pixel >= winX)) {
             xPos = pixel - winX;

@@ -1,6 +1,6 @@
 #include "Gameboy.hpp"
 
-const int CyclesPerFrame = 66905;
+const int CyclesPerFrame = 69905;
 
 Gameboy::Gameboy() {}
 

@@ -29,7 +29,6 @@ public:
     void UnBindContext();
     void Render();
     void AttachShaders(Shader& vs, Shader& fs);
-    void SwapBuffers();
     void SetMemory(Memory* memory);
     void InitializeGLBuffers();
 
@@ -43,11 +42,10 @@ private:
     };
 
     struct pixel {
-        uBYTE r, g, b;
+        uBYTE r, g, b, colorCode;
     };
     
     pixel pixels[NATIVE_SIZE_X][NATIVE_SIZE_Y];
-    uBYTE pixelData[NATIVE_SIZE_X][NATIVE_SIZE_Y];
     uBYTE LCDC;
     uBYTE STAT;
     Memory *memoryRef;
@@ -56,11 +54,10 @@ private:
 
     void DrawScanline();
     void RenderTiles();
-    void RenderWindow();
     void RenderSprites();
     void SetLCDStatus();
     void DrawPixels();
-    void DrawPixel(GLuint x, GLuint y, uBYTE r, uBYTE g, uBYTE b);
+    pixel DeterminePixelRGB(uBYTE colorCode, uWORD colorAdr);
     sprite *ProcessSprites();
     uBYTE GetStat();
     uBYTE GetLCDC();

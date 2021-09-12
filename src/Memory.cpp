@@ -277,17 +277,17 @@ void Memory::Write(uWORD addr, uBYTE data)
         {
             if (attributes[romOnly])
             {
-                rom[addr] = data;
+                cartridge[addr] = data;
             }
             else if (attributes[mbc1])
             {
                 if (attributes[romRamMode])
                 {
-                    rom[translatedAddr + (0xA000 * currentRamBank)] = data;
+                    cartridge[translatedAddr + (0xA000 * currentRamBank)] = data;
                 }
                 else
                 {
-                    rom[addr] = data;
+                    cartridge[addr] = data;
                 }
             }
         }
@@ -558,18 +558,13 @@ uBYTE Memory::Read(uWORD addr, bool debugRead)
     if (!debugRead)
         UpdateTimers(4);
 
-    if ((addr < 0x4000) && !dmaTransferInProgress) // Cart ROM Bank 0
-    {
-        if (!bootRomClosed && (addr < 0x100))
-        {
+    // Cart ROM Bank 0
+    if ((addr < 0x4000) && !dmaTransferInProgress) {
+        if (!bootRomClosed && (addr < 0x100)) {
             return bootRom[addr];
-        }
-        else
-        {
-            if (attributes[romRamMode])
-            {
-                if (romSize > 0x100000)
-                {
+        } else {
+            if (attributes[romRamMode]) {
+                if (romSize > 0x100000) {
                     switch (currentRomBank)
                     {
                     case 0x00:
@@ -588,14 +583,10 @@ uBYTE Memory::Read(uWORD addr, bool debugRead)
                         return cartridge[addr];
                         break;
                     }
-                }
-                else
-                {
+                } else {
                     return cartridge[addr];
                 }
-            }
-            else
-            {
+            } else {
                 return cartridge[addr];
             }
         }
@@ -621,17 +612,17 @@ uBYTE Memory::Read(uWORD addr, bool debugRead)
         {
             if (attributes[romOnly])
             {
-                return rom[addr];
+                return cartridge[addr];
             }
             if (attributes[mbc1])
             {
                 if (attributes[romRamMode])
                 {
-                    return rom[translatedAddr + (0xA000 * currentRamBank)];
+                    return cartridge[translatedAddr + (0xA000 * currentRamBank)];
                 }
                 else
                 {
-                    return rom[addr];
+                    return cartridge[addr];
                 }
             }
         }

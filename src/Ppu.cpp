@@ -2,13 +2,14 @@
 
 Ppu::Ppu() {
 
+    // Coordinates for translation from regular video coordinates
+    // to openGL's ND coordinates
     auto x = 0;
     auto y = 0;
 
-    // Position vertices required for a square / pixel.
-    // Here every pair of float represents an x-y coordinate (i.e. single vertex).
-    // The weird math is to convert from regular video coordinates to
-    // openGL normalized device coordinates.
+    // Since modern opengl's basic primitive is a triangle, we need to construct
+    // pixels out of 2 triangles, which requires 6 vertices per pixel. 
+    // Each vertex is 2 floats, hence why we need 12 floats to represent one pixel.
     for (auto i = 0; i < (NATIVE_SIZE_X * NATIVE_SIZE_Y * 12); i += 12) {
         positionVertices[i] = (-1.0f + (xDiv * x));
         positionVertices[i + 1] = (1.0f - (yDiv * y));
@@ -25,8 +26,7 @@ Ppu::Ppu() {
 
         x++;
 
-        // There are 12 vertices per pixel, therefore we need to verify
-        // that we traversed a full scanline when x reaches 160.
+        // Everytime we complete a scanline, increment y
         if (x == NATIVE_SIZE_X) {
             x = 0;
             y++;
@@ -68,7 +68,7 @@ void Ppu::UnBindContext() {
 void Ppu::Render() {
     DrawPixels();
     glFlush();
-    SwapBuffers();
+    glfwSwapBuffers(window);
 }
 
 void Ppu::AttachShaders(Shader& vs, Shader& fs) {
@@ -81,6 +81,7 @@ void Ppu::AttachShaders(Shader& vs, Shader& fs) {
 }
 
 void Ppu::DrawPixels() {
+
     // Here we define a vec3 color vertex for every vec2 position
     // vertex that we defined above (i.e. we need 18 floats).
     GLfloat colorVertices[NATIVE_SIZE_X * NATIVE_SIZE_Y * 18];
@@ -115,108 +116,76 @@ void Ppu::DrawPixels() {
 
     colorVBO->Generate(colorVertices, sizeof(colorVertices));
 
-    // Finally, draw the pixel
+    // Finally, draw the pixels
     vao->Bind();
     glDrawArrays(GL_TRIANGLES, 0, NATIVE_SIZE_X * NATIVE_SIZE_Y * 12);
     vao->UnBind();
-}
-
-void Ppu::DrawPixel(GLuint x, GLuint y, uBYTE r, uBYTE g, uBYTE b) {    
-    // Position vertices required for a square / pixel.
-    // Here every pair of float represents an x-y coordinate (i.e. single vertex).
-    // The weird math is to convert from regular video coordinates to
-    // openGL normalized device coordinates.
-    GLfloat positionVertices[12] = {
-        (-1.0f + (xDiv * x)), (1.0f - (yDiv * y)),
-        (-1.0f + (xDiv * x) + xDiv), (1.0f - (yDiv * y)),
-        (-1.0f + (xDiv * x)), (1.0f - (yDiv * y) - yDiv),
-        (-1.0f + (xDiv * x) + xDiv), (1.0f - (yDiv * y)),
-        (-1.0f + (xDiv * x)), (1.0f - (yDiv * y) - yDiv),
-        (-1.0f + (xDiv * x) + xDiv), (1.0f - (yDiv * y) - yDiv) 
-    };
-
-    // Here we define a vec3 color vertex for every vec2 position
-    // vertex that we defined above (i.e. we need 18 floats).
-    GLfloat colorVertices[18] = {
-        r / 255.0f, g / 255.0f, b / 255.0f,
-        r / 255.0f, g / 255.0f, b / 255.0f,
-        r / 255.0f, g / 255.0f, b / 255.0f,
-        r / 255.0f, g / 255.0f, b / 255.0f,
-        r / 255.0f, g / 255.0f, b / 255.0f,
-        r / 255.0f, g / 255.0f, b / 255.0f
-    };
-
-    positionVBO->Generate(positionVertices, sizeof(positionVertices));
-    colorVBO->Generate(colorVertices, sizeof(colorVertices));
-
-    // Finally, draw the pixel
-    vao->Bind();
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-    vao->UnBind();
-}
-
-void Ppu::SwapBuffers() {
-    glfwSwapBuffers(window);
 }
 
 void Ppu::DrawScanline()
 {
     LCDC = GetLCDC();
 
-    if (LCDC & (1 << 0))
-    {
+    if (LCDC & (1 << 0)) {
         RenderTiles();
     }
-    if (LCDC & (1 << 1))
-    {
+
+    if (LCDC & (1 << 1)) {
         RenderSprites();
     }
 }
 
 void Ppu::UpdateGraphics(int cycles) {
-    LCDC = GetLCDC();
 
+    LCDC = GetLCDC();
     SetLCDStatus();
 
-    if (LCDC & (1 << 7))
-    {
-        scanlineCounter -= cycles;
-    }
-    else
-    {
+    if (!(LCDC & (1 << 7))) {
         return;
     }
 
-    if (scanlineCounter <= 0) // Time to render new frame
-    {
-        currentScanline = memoryRef->DmaRead(LY_ADR);
+    scanlineCounter -= cycles;
 
+    // Check if it's time to render a new scanline
+    if (scanlineCounter <= 0) {
+        currentScanline = memoryRef->DmaRead(LY_ADR);
         scanlineCounter = 456;
 
-        if (currentScanline < 144)
-        {
+        // If we are not yet at scanline 144, draw the next scanline
+        if (currentScanline < 144) {
             DrawScanline();
         }
-        else if (currentScanline >= 144 && currentScanline < 154)
-        {
+        
+        // If we are in vblank, request an interupt
+        else if (currentScanline >= 144 && currentScanline < 154) {
             memoryRef->RequestInterupt(VBLANK_INT);
         }
-        else
-        {
+
+        // else, it means we're beginning a new frame, set LY to 0 and return
+        else {
             memoryRef->DmaWrite(LY_ADR, 0x00);
             return;
         }
 
+        // If ever we reach this point, we increase the current scanline by 1
         memoryRef->DmaWrite(LY_ADR, memoryRef->DmaRead(LY_ADR) + 1);
     }
 }
 
-void Ppu::RenderTiles()
-{
+void Ppu::RenderTiles() {
+    // Determine the current scanline we are on
+    currentScanline = memoryRef->DmaRead(LY_ADR);
+
+    // If we are in vblank, nothing to do
+    if (currentScanline < 0 || currentScanline > 144) {
+        return;
+    }
+
     LCDC = GetLCDC();
 
-    uWORD tileDataPtr = 0x0;
-    uWORD tileMapPtr = 0x0;
+    // Assume these base pointers
+    uWORD tileDataPtr = 0x9000;
+    uWORD tileMapPtr = 0x9800;
 
     bool windowEnabled = false;
     bool unsignedID = false;
@@ -229,38 +198,19 @@ void Ppu::RenderTiles()
     uBYTE winY = memoryRef->DmaRead(0xFF4A);
 
     // Determine base address of tile data for BG & window
-    if (LCDC & (1 << 4))
-    {
+    if (LCDC & (1 << 4)) {
         tileDataPtr = 0x8000;
         unsignedID = true;
     }
-    else
-    {
-        tileDataPtr = 0x9000;
-        unsignedID = false;
-    }
 
     // Determine the base address tile Mappings for BG & window
-    if (LCDC & (1 << 3))
-    {
+    if (LCDC & (1 << 3)) {
         tileMapPtr = 0x9C00;
     }
-    else
-    {
-        tileMapPtr = 0x9800;
-    }
 
-    if (LCDC & (1 << 5))
-    {
+    if (LCDC & (1 << 5)) {
         windowEnabled = true;
     }
-    else
-    {
-        windowEnabled = false;
-    }
-
-    // Determine the current scanline we are on
-    currentScanline = memoryRef->DmaRead(LY_ADR);
 
     // Calculate which row in the tile to render
     uBYTE yPos;
@@ -273,21 +223,12 @@ void Ppu::RenderTiles()
     uWORD tileRow = (yPos / 8) * 32;
 
     // Start Rendering the scanline
-    for (int pixel = 0; pixel < 160; pixel++)
-    {
-        if (currentScanline < 0 || currentScanline > 144)
-        {
-            continue;
-        }
+    for (int pixel = 0; pixel < 160; pixel++) {
 
         uBYTE xPos = pixel + (scrollX / 8);
 
-        if (windowEnabled)
-        {
-            if (pixel >= winX)
-            {
-                xPos = pixel - winX;
-            }
+        if (windowEnabled && (pixel >= winX)) {
+            xPos = pixel - winX;
         }
 
         uWORD tileColumn = xPos / 8;
@@ -302,20 +243,18 @@ void Ppu::RenderTiles()
         uWORD tileLineOffset = (yPos % 8) * 2; //Each line is 2 bytes
         uWORD tileDataAdr;
 
-        if (unsignedID)
-        {
+        if (unsignedID) {
             tileDataAdr = tileDataPtr + (tileID * 16);
         }
-        else
-        {
-            if (tileID & 0x80)
-            {
+        
+        else {
+            if (tileID & 0x80) {
                 tileID = ~tileID;
                 tileID += 1;
                 tileDataAdr = tileDataPtr - (tileID * 16);
             }
-            else
-            {
+
+            else {
                 tileDataAdr = tileDataPtr + (tileID * 16);
             }
         }
@@ -327,357 +266,15 @@ void Ppu::RenderTiles()
 
         uBYTE ColorCode = 0x00;
 
-        if (data2 & (1 << currentBitPosition))
-        {
+        if (data2 & (1 << currentBitPosition)) {
             ColorCode |= 0x02;
         }
 
-        if (data1 & (1 << currentBitPosition))
-        {
+        if (data1 & (1 << currentBitPosition)) {
             ColorCode |= 0x01;
         }
 
-        uBYTE R = 0x00;
-        uBYTE G = 0x00;
-        uBYTE B = 0x00;
-
-        uBYTE Color_00 = memoryRef->DmaRead(0xFF47) & 0x03;
-        uBYTE Color_01 = ((memoryRef->DmaRead(0xFF47) >> 2) & 0x03);
-        uBYTE Color_10 = ((memoryRef->DmaRead(0xFF47) >> 4) & 0x03);
-        uBYTE Color_11 = ((memoryRef->DmaRead(0xFF47) >> 6) & 0x03);
-
-        // Determine actual color for pixel via Color Pallete reg
-        switch (ColorCode)
-        {
-        case 0x00:
-            if (Color_00 == 0x00)
-            {
-                R = 245;
-                G = 245;
-                B = 245;
-            }
-            else if (Color_00 == 0x1)
-            {
-                R = 211;
-                G = 211;
-                B = 211;
-            }
-            else if (Color_00 == 0x2)
-            {
-                R = 169;
-                G = 169;
-                B = 169;
-            }
-            else if (Color_00 == 0x3)
-            {
-                R = 0;
-                G = 0;
-                B = 0;
-            }
-            break;
-        case 0x01:
-            if (Color_01 == 0x00)
-            {
-                R = 245;
-                G = 245;
-                B = 245;
-            }
-            else if (Color_01 == 0x1)
-            {
-                R = 211;
-                G = 211;
-                B = 211;
-            }
-            else if (Color_01 == 0x2)
-            {
-                R = 169;
-                G = 169;
-                B = 169;
-            }
-            else if (Color_01 == 0x3)
-            {
-                R = 0;
-                G = 0;
-                B = 0;
-            }
-            break;
-        case 0x02:
-            if (Color_10 == 0x00)
-            {
-                R = 245;
-                G = 245;
-                B = 245;
-            }
-            else if (Color_10 == 0x1)
-            {
-                R = 211;
-                G = 211;
-                B = 211;
-            }
-            else if (Color_10 == 0x2)
-            {
-                R = 169;
-                G = 169;
-                B = 169;
-            }
-            else if (Color_10 == 0x3)
-            {
-                R = 0;
-                G = 0;
-                B = 0;
-            }
-            break;
-        case 0x03:
-            if (Color_11 == 0x00)
-            {
-                R = 245;
-                G = 245;
-                B = 245;
-            }
-            else if (Color_11 == 0x1)
-            {
-                R = 211;
-                G = 211;
-                B = 211;
-            }
-            else if (Color_11 == 0x2)
-            {
-                R = 169;
-                G = 169;
-                B = 169;
-            }
-            else if (Color_11 == 0x3)
-            {
-                R = 0;
-                G = 0;
-                B = 0;
-            }
-            break;
-        default:
-            break;
-        }
-
-        if (currentScanline < 0 || currentScanline > 143 || pixel < 0 || pixel > 159)
-        {
-            continue;
-        }
-
-        pixels[pixel][currentScanline] = {R, G, B};
-
-        // Update pixel data
-        pixelData[pixel][currentScanline] = ColorCode;
-    }
-}
-
-void Ppu::RenderWindow()
-{
-    LCDC = GetLCDC();
-
-    uBYTE winY = memoryRef->DmaRead(0xFF4A);
-    uBYTE winX = memoryRef->DmaRead(0xFF4B) - 7;
-    uWORD tileMapPtr = 0x9800;
-    uWORD tileDataPtr = 0x9000;
-    bool unsignedID = false;
-
-    if (LCDC & (1 << 6))
-    {
-        tileMapPtr = 0x9C00;
-    }
-
-    if (LCDC & (1 << 4))
-    {
-        tileDataPtr = 0x8000;
-        unsignedID = true;
-    }
-
-    // Determine the current scanline we are on
-    currentScanline = memoryRef->DmaRead(LY_ADR);
-
-    // Calculate which row in the tile to render
-    uBYTE yPos = winY + currentScanline;
-    uWORD tileRow = (yPos / 8) * 32;
-
-    // Start Rendering the scanline
-    for (int pixel = 0; pixel < 160; pixel++)
-    {
-        uBYTE xPos = pixel + winX;
-
-        uWORD tileColumn = xPos / 8;
-
-        // Determine the address for the tile ID
-        uWORD currentTileMapAdr = tileMapPtr + tileColumn + tileRow;
-
-        // Fetch the tile ID
-        uBYTE tileID = memoryRef->DmaRead(currentTileMapAdr);
-
-        // Determine the current pixel data from the tile data
-        uWORD tileLineOffset = (yPos % 8) * 2; //Each line is 2 bytes
-        uWORD tileDataAdr;
-
-        if (unsignedID)
-        {
-            tileDataAdr = tileDataPtr + (tileID * 16);
-        }
-        else
-        {
-            if (tileID & 0x80)
-            {
-                tileID = ~tileID;
-                tileID += 1;
-                tileDataAdr = tileDataPtr - (tileID * 16);
-            }
-            else
-            {
-                tileDataAdr = tileDataPtr + (tileID * 16);
-            }
-        }
-
-        uBYTE data1 = memoryRef->DmaRead(tileDataAdr + tileLineOffset);
-        uBYTE data2 = memoryRef->DmaRead(tileDataAdr + tileLineOffset + 1);
-
-        int currentBitPosition = (((pixel % 8) - 7) * -1);
-
-        uBYTE ColorCode = 0x00;
-
-        if (data2 & (1 << currentBitPosition))
-        {
-            ColorCode |= 0x02;
-        }
-
-        if (data1 & (1 << currentBitPosition))
-        {
-            ColorCode |= 0x01;
-        }
-
-        uBYTE R = 0x00;
-        uBYTE G = 0x00;
-        uBYTE B = 0x00;
-
-        uBYTE Color_00 = memoryRef->DmaRead(0xFF47) & 0x03;
-        uBYTE Color_01 = ((memoryRef->DmaRead(0xFF47) >> 2) & 0x03);
-        uBYTE Color_10 = ((memoryRef->DmaRead(0xFF47) >> 4) & 0x03);
-        uBYTE Color_11 = ((memoryRef->DmaRead(0xFF47) >> 6) & 0x03);
-
-        // Determine actual color for pixel via Color Pallete reg
-        switch (ColorCode)
-        {
-        case 0x00:
-            if (Color_00 == 0x00)
-            {
-                R = 245;
-                G = 245;
-                B = 245;
-            }
-            else if (Color_00 == 0x1)
-            {
-                R = 211;
-                G = 211;
-                B = 211;
-            }
-            else if (Color_00 == 0x2)
-            {
-                R = 169;
-                G = 169;
-                B = 169;
-            }
-            else if (Color_00 == 0x3)
-            {
-                R = 0;
-                G = 0;
-                B = 0;
-            }
-            break;
-        case 0x01:
-            if (Color_01 == 0x00)
-            {
-                R = 245;
-                G = 245;
-                B = 245;
-            }
-            else if (Color_01 == 0x1)
-            {
-                R = 211;
-                G = 211;
-                B = 211;
-            }
-            else if (Color_01 == 0x2)
-            {
-                R = 169;
-                G = 169;
-                B = 169;
-            }
-            else if (Color_01 == 0x3)
-            {
-                R = 0;
-                G = 0;
-                B = 0;
-            }
-            break;
-        case 0x02:
-            if (Color_10 == 0x00)
-            {
-                R = 245;
-                G = 245;
-                B = 245;
-            }
-            else if (Color_10 == 0x1)
-            {
-                R = 211;
-                G = 211;
-                B = 211;
-            }
-            else if (Color_10 == 0x2)
-            {
-                R = 169;
-                G = 169;
-                B = 169;
-            }
-            else if (Color_10 == 0x3)
-            {
-                R = 0;
-                G = 0;
-                B = 0;
-            }
-            break;
-        case 0x03:
-            if (Color_11 == 0x00)
-            {
-                R = 245;
-                G = 245;
-                B = 245;
-            }
-            else if (Color_11 == 0x1)
-            {
-                R = 211;
-                G = 211;
-                B = 211;
-            }
-            else if (Color_11 == 0x2)
-            {
-                R = 169;
-                G = 169;
-                B = 169;
-            }
-            else if (Color_11 == 0x3)
-            {
-                R = 0;
-                G = 0;
-                B = 0;
-            }
-            break;
-        default:
-            break;
-        }
-
-        if (currentScanline < 0 || currentScanline > 143 || pixel < 0 || pixel > 159)
-        {
-            continue;
-        }
-
-        pixels[pixel][currentScanline] = {R, G, B};
-
-        // Update pixel data
-        pixelData[pixel][currentScanline] = ColorCode;
+        pixels[pixel][currentScanline] = DeterminePixelRGB(ColorCode, 0xFF47);
     }
 }
 
@@ -687,15 +284,13 @@ void Ppu::RenderSprites()
 
     bool u_8x16 = false;
 
-    if (LCDC & (1 << 2))
-    {
+    if (LCDC & (1 << 2)) {
         u_8x16 = true;
     }
 
     sprite *sprites = ProcessSprites();
 
-    for (uBYTE i = 0; i < 40; i++)
-    {
+    for (uBYTE i = 0; i < 40; i++) {
         bool yFlip = (sprites[i].attributes & (1 << 6));
         bool xFlip = (sprites[i].attributes & (1 << 5));
         bool priority = !(sprites[i].attributes & (1 << 7));
@@ -704,18 +299,15 @@ void Ppu::RenderSprites()
 
         uBYTE ysize = 8;
 
-        if (u_8x16)
-        {
+        if (u_8x16) {
             sprites[i].patternNumber &= 0xFE;
             ysize = 16;
         }
 
-        if ((currentScanline >= sprites[i].yPos) && (currentScanline < (sprites[i].yPos + ysize)))
-        {
+        if ((currentScanline >= sprites[i].yPos) && (currentScanline < (sprites[i].yPos + ysize))) {
             int line = currentScanline - sprites[i].yPos;
 
-            if (yFlip)
-            {
+            if (yFlip) {
                 line -= ysize;
                 line *= -1;
             }
@@ -726,180 +318,48 @@ void Ppu::RenderSprites()
             uBYTE data1 = memoryRef->DmaRead(dataaddr);
             uBYTE data2 = memoryRef->DmaRead(dataaddr + 1);
 
-            for (int tilepixel = 7; tilepixel >= 0; tilepixel--)
-            {
+            for (int tilepixel = 7; tilepixel >= 0; tilepixel--) {
                 int ColorBit = tilepixel;
 
-                if (xFlip)
-                {
+                if (xFlip) {
                     ColorBit -= 7;
                     ColorBit *= -1;
                 }
 
                 uBYTE ColorCode = 0x00;
 
-                if (data2 & (1 << ColorBit))
-                {
+                if (data2 & (1 << ColorBit)) {
                     ColorCode |= 0x02;
                 }
 
-                if (data1 & (1 << ColorBit))
-                {
+                if (data1 & (1 << ColorBit)) {
                     ColorCode |= 0x01;
                 }
 
-                uWORD coloradr = 0x0000;
-
-                if (sprites[i].attributes & (1 << 4))
-                {
-                    coloradr = 0xFF49;
-                }
-                else
-                {
-                    coloradr = 0xFF48;
-                }
-
-                uBYTE R = 0x0;
-                uBYTE G = 0x0;
-                uBYTE B = 0x0;
-
-                uBYTE Color_00 = (memoryRef->DmaRead(coloradr) & 0x03);
-                uBYTE Color_01 = ((memoryRef->DmaRead(coloradr) >> 2) & 0x03);
-                uBYTE Color_10 = ((memoryRef->DmaRead(coloradr) >> 4) & 0x03);
-                uBYTE Color_11 = ((memoryRef->DmaRead(coloradr) >> 6) & 0x03);
-
-                //Determine actual color for pixel via Color Pallete reg
-                switch (ColorCode)
-                {
-                case 0x00:
-                    if (Color_00 == 0x00)
-                    {
-                        R = 245;
-                        G = 245;
-                        B = 245;
-                    }
-                    else if (Color_00 == 0x1)
-                    {
-                        R = 211;
-                        G = 211;
-                        B = 211;
-                    }
-                    else if (Color_00 == 0x2)
-                    {
-                        R = 169;
-                        G = 169;
-                        B = 169;
-                    }
-                    else if (Color_00 == 0x3)
-                    {
-                        R = 0;
-                        G = 0;
-                        B = 0;
-                    }
-                    break;
-                case 0x01:
-                    if (Color_01 == 0x00)
-                    {
-                        R = 245;
-                        G = 245;
-                        B = 245;
-                    }
-                    else if (Color_01 == 0x1)
-                    {
-                        R = 211;
-                        G = 211;
-                        B = 211;
-                    }
-                    else if (Color_01 == 0x2)
-                    {
-                        R = 169;
-                        G = 169;
-                        B = 169;
-                    }
-                    else if (Color_01 == 0x3)
-                    {
-                        R = 0;
-                        G = 0;
-                        B = 0;
-                    }
-                    break;
-                case 0x02:
-                    if (Color_10 == 0x00)
-                    {
-                        R = 245;
-                        G = 245;
-                        B = 245;
-                    }
-                    else if (Color_10 == 0x1)
-                    {
-                        R = 211;
-                        G = 211;
-                        B = 211;
-                    }
-                    else if (Color_10 == 0x2)
-                    {
-                        R = 169;
-                        G = 169;
-                        B = 169;
-                    }
-                    else if (Color_10 == 0x3)
-                    {
-                        R = 0;
-                        G = 0;
-                        B = 0;
-                    }
-                    break;
-                case 0x03:
-                    if (Color_11 == 0x00)
-                    {
-                        R = 245;
-                        G = 245;
-                        B = 245;
-                    }
-                    else if (Color_11 == 0x1)
-                    {
-                        R = 211;
-                        G = 211;
-                        B = 211;
-                    }
-                    else if (Color_11 == 0x2)
-                    {
-                        R = 169;
-                        G = 169;
-                        B = 169;
-                    }
-                    else if (Color_11 == 0x3)
-                    {
-                        R = 0;
-                        G = 0;
-                        B = 0;
-                    }
-                    break;
-                default:
-                    break;
-                }
-
-                if (R == 224 && G == 248 && B == 208)
-                {
+                // If the current pixel color for the given sprite is 0x00,
+                // then this is considered a "transparent" pixel, therefore nothing left to do.
+                if (ColorCode == 0x00) {
                     continue;
                 }
+
+                uWORD coloradr = 0xFF48;
+
+                if (sprites[i].attributes & (1 << 4)) {
+                    coloradr = 0xFF49;
+                }
+
+                pixel tempPixel = DeterminePixelRGB(ColorCode, coloradr);
 
                 int xPix = 0 - tilepixel - 1;
 
                 int pixel = sprites[i].xPos + xPix;
 
-                if (currentScanline < 0 || currentScanline > 143 || pixel < 0 || pixel > 159 || ColorCode == 0x00)
-                {
-                    continue;
-                }
-
                 // Determine if sprite pixel has priority over background or window
-                if (!priority && pixelData[pixel][currentScanline] != 0x00)
-                {
+                if (!priority && pixels[pixel][currentScanline].colorCode != 0x00) {
                     continue;
                 }
 
-                pixels[pixel][currentScanline] = {R, G, B};
+                pixels[pixel][currentScanline] = tempPixel;
             }
         }
     }
@@ -1008,23 +468,81 @@ Ppu::sprite *Ppu::ProcessSprites()
         processedSprites[i].attributes = memoryRef->DmaRead(OAM_ADR + index + 3);
     }
 
-    // for(uBYTE i = 0; i < 40; i++) {
-    //     for(uBYTE j = 0; j < 40; j++) {
-    //         if (i == j) {
-    //             continue;
-    //         }
-
-    //         for (uBYTE k = 1; k < 8; k++) {
-    //             if ((processedSprites[j].xPos + k) == processedSprites[i].xPos) {
-    //                 temp = processedSprites[i];
-    //                 processedSprites[i] = processedSprites[j];
-    //                 processedSprites[j] = temp;
-    //                 break;
-    //             }
-    //         }
-    //     }
-    // }
-
     return processedSprites;
 }
 
+Ppu::pixel Ppu::DeterminePixelRGB(uBYTE colorCode, uWORD colorAdr) {
+    uBYTE R = 0x00;
+    uBYTE G = 0x00;
+    uBYTE B = 0x00;
+
+    uBYTE Color_00 = memoryRef->DmaRead(colorAdr) & 0x03;
+    uBYTE Color_01 = ((memoryRef->DmaRead(colorAdr) >> 2) & 0x03);
+    uBYTE Color_10 = ((memoryRef->DmaRead(colorAdr) >> 4) & 0x03);
+    uBYTE Color_11 = ((memoryRef->DmaRead(colorAdr) >> 6) & 0x03);
+
+    // Determine actual color for pixel via Color Pallete reg
+    switch (colorCode)
+    {
+    case 0x00:
+        if (Color_00 == 0x00) {
+            R = 245; G = 245; B = 245;
+        }
+        else if (Color_00 == 0x1) {
+            R = 211; G = 211; B = 211;
+        }
+        else if (Color_00 == 0x2) {
+            R = 169; G = 169; B = 169;
+        }
+        else if (Color_00 == 0x3) {
+            R = 0; G = 0; B = 0;
+        }
+        break;
+    case 0x01:
+        if (Color_01 == 0x00) {
+            R = 245; G = 245; B = 245;
+        }
+        else if (Color_01 == 0x1) {
+            R = 211; G = 211; B = 211;
+        }
+        else if (Color_01 == 0x2) {
+            R = 169; G = 169; B = 169;
+        }
+        else if (Color_01 == 0x3) {
+            R = 0; G = 0; B = 0;
+        }
+        break;
+    case 0x02:
+        if (Color_10 == 0x00) {
+            R = 245; G = 245; B = 245;
+        }
+        else if (Color_10 == 0x1) {
+            R = 211; G = 211; B = 211;
+        }
+        else if (Color_10 == 0x2) {
+            R = 169; G = 169; B = 169;
+        }
+        else if (Color_10 == 0x3) {
+            R = 0; G = 0; B = 0;
+        }
+        break;
+    case 0x03:
+        if (Color_11 == 0x00) {
+            R = 245; G = 245; B = 245;
+        }
+        else if (Color_11 == 0x1) {
+            R = 211; G = 211; B = 211;
+        }
+        else if (Color_11 == 0x2) {
+            R = 169; G = 169; B = 169;
+        }
+        else if (Color_11 == 0x3) {
+            R = 0; G = 0; B = 0;
+        }
+        break;
+    default:
+        break;
+    }
+
+    return {R, G, B, colorCode};
+}

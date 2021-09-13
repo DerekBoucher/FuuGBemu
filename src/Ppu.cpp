@@ -262,7 +262,7 @@ void Ppu::RenderTiles() {
         uBYTE data1 = memoryRef->DmaRead(tileDataAdr + tileLineOffset);
         uBYTE data2 = memoryRef->DmaRead(tileDataAdr + tileLineOffset + 1);
 
-        int currentBitPosition = (((pixel % 8) - 7) * -1);
+        int currentBitPosition = ((((pixel + scrollX) % 8) - 7) * -1);
 
         uBYTE ColorCode = 0x00;
 

@@ -14,6 +14,7 @@ ifeq ($(OS),Windows_NT)
 else
 	UNAME_S := $(shell uname -s)
 	ifeq ($(UNAME_S),Linux)
+		COMPILE_FLAGS += -DFUUGB_SYSTEM_LINUX
 	endif
 	ifeq ($(UNAME_S),Darwin)
 	endif
@@ -48,7 +49,7 @@ clean:
 $(BIN_PATH)/$(BIN_NAME) : $(OBJECTS)
 	@echo "Linking $^ -> $@"
 	@$(CXX) $(OBJECTS) -o $@ $(LIBS)
-	@echo "Making symlink: $(BIN_NAME) -> $<"
+	@echo "Making symlink: $@ -> $(BIN_NAME)"
 	@$(RM) $(BIN_NAME)
 	@ln -s $(BIN_PATH)/$(BIN_NAME) $(BIN_NAME)
 

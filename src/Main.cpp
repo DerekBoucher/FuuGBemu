@@ -13,6 +13,7 @@
 #define SCALE 5
 
 GLFWwindow* window;
+Gameboy* gameboy;
 
 static void GLAPIENTRY MessageCallback( GLenum source,
                     GLenum type,
@@ -30,6 +31,11 @@ static void GLAPIENTRY MessageCallback( GLenum source,
 void signalHandler(int signal) {
     fprintf(stdout, "caught interrupt signal, terminating.\n");
     glfwSetWindowShouldClose(window, GL_TRUE);
+}
+
+void keyboardHandler(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    if (gameboy != NULL) 
+        gameboy->HandleKeyboardInput(key, scancode, action, mods);
 }
 
 void printUsage() {
@@ -95,6 +101,8 @@ int main(int argc, char** argv) {
     // Make the created window as the current context
     glfwMakeContextCurrent(window);
 
+    // Set the 
+
     GLenum glewInitCode = glewInit();
     if (glewInitCode != GLEW_OK) {
         fprintf(stderr, "could not initialize glew: %s\n", glewGetErrorString(glewInitCode));
@@ -108,7 +116,7 @@ int main(int argc, char** argv) {
     #endif
 
     // Create a gameboy instance
-    Gameboy gameboy = Gameboy((uBYTE*)romData, window);
+    gameboy = new Gameboy((uBYTE*)romData, window);
 
     // Set viewport
     glViewport(0, 0, NATIVE_SIZE_X * SCALE, NATIVE_SIZE_Y * SCALE);
@@ -122,8 +130,11 @@ int main(int argc, char** argv) {
     // main thread. The gameboy thread will handle it from here
     glfwMakeContextCurrent(NULL);
 
+    // Set keyboard handler
+    glfwSetKeyCallback(window, keyboardHandler);
+
     // Create a gameboy instance, then start it.
-    gameboy.Start();
+    gameboy->Start();
 
     // Here all we want the main thread to do
     // is handle window events.
@@ -133,7 +144,7 @@ int main(int argc, char** argv) {
         std::this_thread::sleep_for(std::chrono::duration(std::chrono::milliseconds(100)));
     }
 
-    gameboy.Stop();
+    gameboy->Stop();
     glfwTerminate();
 
     return EXIT_SUCCESS;

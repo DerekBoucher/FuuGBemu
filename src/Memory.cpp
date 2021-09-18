@@ -181,15 +181,15 @@ void Memory::ReadRom(uBYTE data[MAX_CART_SIZE]) {
         romSize = 0x800000;
         break;
     case 0x52:
-        romBankCount = 72;
+        romBankCount = 72 ^ 3;
         romSize = 0x120000;
         break;
     case 0x53:
-        romBankCount = 80;
+        romBankCount = 80 ^ 3;
         romSize = 0x133334;
         break;
     case 0x54:
-        romBankCount = 96;
+        romBankCount = 96 ^ 3;
         romSize = 0x180000;
         break;
     default:
@@ -201,12 +201,12 @@ void Memory::ReadRom(uBYTE data[MAX_CART_SIZE]) {
     // Determine ram bank count and size
     switch (cartridge[CART_HEADER_RAMINFO]) {
     case 0x00:
-        ramBankSize = 0x800;
-        ramBankCount = 1;
+        ramBankSize = 0x0;
+        ramBankCount = 0;
         break;
     case 0x01:
-        ramBankSize = 0x800;
-        ramBankCount = 1;
+        ramBankSize = 0x0;
+        ramBankCount = 0;
         break;
     case 0x02:
         ramBankSize = 0x2000;
@@ -229,6 +229,9 @@ void Memory::ReadRom(uBYTE data[MAX_CART_SIZE]) {
         exit(EXIT_FAILURE);
         break;
     }
+
+    // Special case for joypad register, inputs are held high by default
+    rom[JOYPAD_INPUT_REG] = 0xFF;
 }
 
 void Memory::closeBootRom() {
@@ -322,8 +325,9 @@ void Memory::Write(uWORD addr, uBYTE data)
     {
         if (addr == 0xFF00) // Joypad register
         {
-            data = (data & 0xF0) | (rom[addr] & 0x0F);
-            rom[addr] = data;
+            // Only bits 5 and 4 can be written to (bits 7 and 6 are unused)
+            data = (data & 0xF0);
+            rom[addr] |= data;
         }
         else if (addr == 0xFF01) // Serial Transfer Data
         {
@@ -366,7 +370,7 @@ void Memory::Write(uWORD addr, uBYTE data)
         }
         else if (addr == 0xFF0F) // Interrupt Flag Register
         {
-            rom[addr] = data | 0xE0;
+            rom[addr] = data;
         }
         else if (addr == 0xFF10) // Channel 1 Sweep Register
         {
@@ -462,14 +466,14 @@ void Memory::Write(uWORD addr, uBYTE data)
         }
         else if (addr == 0xFF40) // LCDC Register
         {
-            uBYTE mode = getStatMode();
-            if (!(data & 0x80))
-            {
-                if (mode != 1)
-                {
-                    data |= 0x80;
-                }
-            }
+            // uBYTE mode = getStatMode();
+            // if (!(data & 0x80))
+            // {
+            //     if (mode != 1)
+            //     {
+            //         data |= 0x80;
+            //     }
+            // }
             rom[addr] = data;
         }
         else if (addr == 0xFF41) // STAT Register
@@ -546,7 +550,7 @@ void Memory::Write(uWORD addr, uBYTE data)
     {
         rom[addr] = data;
     }
-    else if ((addr == 0xFFFF) && !dmaTransferInProgress) // Interrupt Enable Register
+    else if (addr == 0xFFFF) // Interrupt Enable Register
     {
         rom[addr] = data;
     }
@@ -602,8 +606,8 @@ uBYTE Memory::Read(uWORD addr, bool debugRead)
 
         if (mode == 3)
             return rom[addr];
-        else
-            return 0xFF;
+        
+        return 0xFF;
     }
     else if ((addr >= 0xA000) && (addr < 0xC000) && !dmaTransferInProgress) // External RAM
     {
@@ -614,22 +618,19 @@ uBYTE Memory::Read(uWORD addr, bool debugRead)
             {
                 return cartridge[addr];
             }
+
             if (attributes[mbc1])
             {
                 if (attributes[romRamMode])
                 {
                     return cartridge[translatedAddr + (0xA000 * currentRamBank)];
                 }
-                else
-                {
-                    return cartridge[addr];
-                }
+
+                return cartridge[addr];
             }
         }
-        else
-        {
-            return 0xFF;
-        }
+
+        return 0xFF;
     }
     else if ((addr >= 0xC000) && (addr < 0xD000) && !dmaTransferInProgress) // Work RAM 0
     {
@@ -840,29 +841,29 @@ void Memory::changeRamBank(uBYTE data)
 
 void Memory::RequestInterupt(int code)
 {
-    uBYTE IF = rom[0xFF0F];
+    uBYTE IF = rom[IF_ADR];
 
     switch (code)
     {
     case VBLANK_INT:
         IF |= 0x01;
-        rom[0xFF0F] = IF;
+        rom[IF_ADR] = IF;
         break;
     case LCDC_INT:
         IF |= 0x02;
-        rom[0xFF0F] = IF;
+        rom[IF_ADR] = IF;
         break;
     case TIMER_OVERFLOW_INT:
         IF |= 0x04;
-        rom[0xFF0F] = IF;
+        rom[IF_ADR] = IF;
         break;
     case SER_TRF_INT:
         IF |= 0x08;
-        rom[0xFF0F] = IF;
+        rom[IF_ADR] = IF;
         break;
     case CONTROL_INT:
         IF |= 0x10;
-        rom[0xFF0F] = IF;
+        rom[IF_ADR] = IF;
         break;
     }
 }

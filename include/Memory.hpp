@@ -33,8 +33,12 @@ typedef unsigned short uWORD;
 #define DIV_ADR 0xFF04
 #define TIMA_ADR 0xFF05
 #define TIM_MOD_ADR 0xFF06
+#define IF_ADR 0xFF0F
+#define JOYPAD_INPUT_REG 0xFF00
 
 class Memory {
+
+friend class Gameboy;
 
 public:
     Memory();

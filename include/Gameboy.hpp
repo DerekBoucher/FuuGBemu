@@ -25,6 +25,8 @@ public:
     void Pause();
     void Resume();
 
+    void HandleKeyboardInput(int key, int scancode, int action, int modBits);
+
 private:
     void Wait();
 

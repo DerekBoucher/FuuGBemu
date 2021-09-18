@@ -101,8 +101,6 @@ int main(int argc, char** argv) {
     // Make the created window as the current context
     glfwMakeContextCurrent(window);
 
-    // Set the 
-
     GLenum glewInitCode = glewInit();
     if (glewInitCode != GLEW_OK) {
         fprintf(stderr, "could not initialize glew: %s\n", glewGetErrorString(glewInitCode));
@@ -141,10 +139,11 @@ int main(int argc, char** argv) {
     // The gameboy will handle swapping of buffers
     while(!glfwWindowShouldClose(window)) {
         glfwPollEvents();
-        std::this_thread::sleep_for(std::chrono::duration(std::chrono::milliseconds(100)));
     }
 
     gameboy->Stop();
+
+    delete gameboy;
     glfwTerminate();
 
     return EXIT_SUCCESS;

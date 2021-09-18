@@ -550,7 +550,7 @@ void Memory::Write(uWORD addr, uBYTE data)
     {
         rom[addr] = data;
     }
-    else if (addr == 0xFFFF) // Interrupt Enable Register
+    else if ((addr == 0xFFFF) && !dmaTransferInProgress) // Interrupt Enable Register
     {
         rom[addr] = data;
     }

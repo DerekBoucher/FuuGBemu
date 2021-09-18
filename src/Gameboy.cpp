@@ -97,7 +97,7 @@ void Gameboy::HandleKeyboardInput(int key, int scancode, int action, int modBits
         return;
 
     if (action == GLFW_RELEASE) {
-        memory.rom[JOYPAD_INPUT_REG] = 0xFF;
+        memory.rom[JOYPAD_INPUT_REG] |= 0x0F;
         return;
     }
 
@@ -105,23 +105,27 @@ void Gameboy::HandleKeyboardInput(int key, int scancode, int action, int modBits
     if (key == GLFW_KEY_DOWN || key == GLFW_KEY_Z) {
         memory.rom[JOYPAD_INPUT_REG] &= ~(1 << 3);
         memory.RequestInterupt(CONTROL_INT);
+        return;
     }
 
     // User pressed either UP or SELECT
     if (key == GLFW_KEY_UP || key == GLFW_KEY_X) {
         memory.rom[JOYPAD_INPUT_REG] &= ~(1 << 2);
         memory.RequestInterupt(CONTROL_INT);
+        return;
     }
 
     // User pressed either LEFT or B
     if (key == GLFW_KEY_LEFT || key == GLFW_KEY_S) {
         memory.rom[JOYPAD_INPUT_REG] &= ~(1 << 1);
         memory.RequestInterupt(CONTROL_INT);
+        return;
     }
 
     // User pressed either RIGHT or A
     if (key == GLFW_KEY_RIGHT || key == GLFW_KEY_A) {
         memory.rom[JOYPAD_INPUT_REG] &= ~(1 << 0);
         memory.RequestInterupt(CONTROL_INT);
+        return;
     }
 }

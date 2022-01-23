@@ -43,14 +43,19 @@ void Gameboy::Stop() {
         thread->join();
 }
 
+void Gameboy::SkipBootRom() {
+    cpu.SetPostBootRomState();
+    memory.SetPostBootRomState();
+}
+
 void Gameboy::Run() {
-    
+
     // Set the context as current on this thread
     ppu.BindContext();
 
     // Main gameboy loop
-    while(running) {
-        
+    while (running) {
+
         // We emulate the gameboy by keeping track of the clock cycles
         // that the cpu has executed. The gameboy's ppu refreshes the display
         // 60 times a second. The inverse of this frequency means that we need to 
@@ -70,7 +75,8 @@ void Gameboy::Run() {
                 cycles = 4;
                 memory.UpdateTimers(cycles);
                 cpu.Halt();
-            } else {
+            }
+            else {
                 cycles = cpu.ExecuteNextOpCode();
             }
 
@@ -91,40 +97,71 @@ void Gameboy::Run() {
 }
 
 void Gameboy::HandleKeyboardInput(int key, int scancode, int action, int modBits) {
-    
+
     // Ignore any keyboard action that is not PRESSED
     if (action != GLFW_PRESS && action != GLFW_RELEASE)
         return;
 
+    // The emulator uses a custom scheme that the memory module
+    // translates to what the original gameboy hardware would expect
+    // Bit 7 - Down
+    // Bit 6 - Up
+    // Bit 5 - Left
+    // Bit 4 - Right
+    // Bit 3 - Start
+    // Bit 2 - Select
+    // Bit 1 - B
+    // Bit 0 - A
+
     if (action == GLFW_RELEASE) {
-        memory.rom[JOYPAD_INPUT_REG] |= 0x0F;
+        memory.joypadBuffer = 0xFF;
         return;
     }
 
-    // User pressed either DOWN or START
-    if (key == GLFW_KEY_DOWN || key == GLFW_KEY_Z) {
-        memory.rom[JOYPAD_INPUT_REG] &= ~(1 << 3);
+    if (key == GLFW_KEY_DOWN) {
+        memory.joypadBuffer &= ~(1 << 7);
         memory.RequestInterupt(CONTROL_INT);
         return;
     }
 
-    // User pressed either UP or SELECT
-    if (key == GLFW_KEY_UP || key == GLFW_KEY_X) {
-        memory.rom[JOYPAD_INPUT_REG] &= ~(1 << 2);
+    if (key == GLFW_KEY_UP) {
+        memory.joypadBuffer &= ~(1 << 6);
         memory.RequestInterupt(CONTROL_INT);
         return;
     }
 
-    // User pressed either LEFT or B
-    if (key == GLFW_KEY_LEFT || key == GLFW_KEY_S) {
-        memory.rom[JOYPAD_INPUT_REG] &= ~(1 << 1);
+    if (key == GLFW_KEY_LEFT) {
+        memory.joypadBuffer &= ~(1 << 5);
         memory.RequestInterupt(CONTROL_INT);
         return;
     }
 
-    // User pressed either RIGHT or A
-    if (key == GLFW_KEY_RIGHT || key == GLFW_KEY_A) {
-        memory.rom[JOYPAD_INPUT_REG] &= ~(1 << 0);
+    if (key == GLFW_KEY_RIGHT) {
+        memory.joypadBuffer &= ~(1 << 4);
+        memory.RequestInterupt(CONTROL_INT);
+        return;
+    }
+
+    if (key == GLFW_KEY_C) {
+        memory.joypadBuffer &= ~(1 << 3);
+        memory.RequestInterupt(CONTROL_INT);
+        return;
+    }
+
+    if (key == GLFW_KEY_V) {
+        memory.joypadBuffer &= ~(1 << 2);
+        memory.RequestInterupt(CONTROL_INT);
+        return;
+    }
+
+    if (key == GLFW_KEY_X) {
+        memory.joypadBuffer &= ~(1 << 1);
+        memory.RequestInterupt(CONTROL_INT);
+        return;
+    }
+
+    if (key == GLFW_KEY_Z) {
+        memory.joypadBuffer &= ~(1 << 0);
         memory.RequestInterupt(CONTROL_INT);
         return;
     }

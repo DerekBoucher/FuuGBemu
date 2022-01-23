@@ -44,11 +44,11 @@ private:
     struct pixel {
         uBYTE r, g, b, colorCode;
     };
-    
+
     pixel pixels[NATIVE_SIZE_X][NATIVE_SIZE_Y];
     uBYTE LCDC;
     uBYTE STAT;
-    Memory *memoryRef;
+    Memory* memoryRef;
     int currentScanline;
     int scanlineCounter;
 
@@ -58,7 +58,7 @@ private:
     void SetLCDStatus();
     void DrawPixels();
     pixel DeterminePixelRGB(uBYTE colorCode, uWORD colorAdr);
-    sprite *ProcessSprites();
+    sprite* ProcessSprites();
     uBYTE GetStat();
     uBYTE GetLCDC();
 

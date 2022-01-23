@@ -19,6 +19,15 @@ Cpu::~Cpu()
 {
 }
 
+void Cpu::SetPostBootRomState() {
+    AF = 0x0108;
+    BC = 0x0013;
+    DE = 0x00D8;
+    HL = 0x014D;
+    PC = 0x0100;
+    SP = 0xFFFE;
+}
+
 void Cpu::SetMemory(Memory* memory) {
     memoryUnit = memory;
 }

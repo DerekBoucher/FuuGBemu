@@ -29,7 +29,7 @@ class Cpu
 {
 public:
     Cpu();
-    Cpu(Cpu &) = delete;
+    Cpu(Cpu&) = delete;
     ~Cpu();
 
     bool Halted;
@@ -40,6 +40,7 @@ public:
     void Halt();
     void SetMemory(Memory* memory);
     int ExecuteNextOpCode();
+    void SetPostBootRomState();
 
     enum opCode {
         NOP = 0x00,             //No instruction
@@ -599,7 +600,7 @@ private:
     bool buggedHalt;
     int cyclesExecuted;
     int dividerRegisterCounter;
-    Memory *memoryUnit;
+    Memory* memoryUnit;
     uBYTE byte;
 
     uWORD increment16BitRegister(uWORD);

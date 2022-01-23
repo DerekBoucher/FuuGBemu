@@ -38,7 +38,7 @@ typedef unsigned short uWORD;
 
 class Memory {
 
-friend class Gameboy;
+    friend class Gameboy;
 
 public:
     Memory();
@@ -54,6 +54,7 @@ public:
     void ReadRom(uBYTE data[MAX_CART_SIZE]);
     uBYTE Read(uWORD, bool = false);
     uBYTE DmaRead(uWORD);
+    void SetPostBootRomState();
 
 private:
     void changeRomBank(uWORD, uBYTE);
@@ -62,6 +63,7 @@ private:
     void changeMode(uBYTE);
     void dmaTransfer(uBYTE);
     void closeBootRom();
+    void handleJoypadTranslation(uBYTE);
     uBYTE getStatMode();
 
     int dmaCyclesCompleted;
@@ -97,6 +99,7 @@ private:
     uint64_t romSize;
     uint64_t ramSize;
 
+    uBYTE joypadBuffer;
 
     uBYTE rom[NATIVE_ROM_SIZE];
     uBYTE cartridge[MAX_CART_SIZE];

@@ -15,18 +15,61 @@
 GLFWwindow* window;
 Gameboy* gameboy;
 
-static void GLAPIENTRY MessageCallback( GLenum source,
-                    GLenum type,
-                    GLuint id,
-                    GLenum severity,
-                    GLsizei length,
-                    const GLchar* message,
-                    const void* userParam) {
-                        if (type == GL_DEBUG_TYPE_ERROR) {
-                            fprintf( stderr, "** GL ERROR **: type = 0x%x, severity = 0x%x, message = %s\n",
-                                type, severity, message); 
-                        }    
-                    }
+bool skipBootRom = false;
+std::string romPath = "";
+
+#ifdef FUUGB_DEBUG
+static void GLAPIENTRY MessageCallback(GLenum source,
+    GLenum type,
+    GLuint id,
+    GLenum severity,
+    GLsizei length,
+    const GLchar* message,
+    const void* userParam) {
+    if (type == GL_DEBUG_TYPE_ERROR) {
+        fprintf(stderr, "** GL ERROR **: type = 0x%x, severity = 0x%x, message = %s\n",
+            type, severity, message);
+    }
+}
+#endif
+
+void printUsage() {
+    fprintf(stdout, "FuuGBemu\n");
+    fprintf(stdout, "Usage:\n");
+    fprintf(stdout, "\tFuuGBemu [OPTIONS] <rom path>\n");
+    fprintf(stdout, "Options:\n");
+    fprintf(stdout, "\t--skip-boot-rom\t\tSkips the boot rom and enters the game code immediately.\n");
+}
+
+void parseArguments(int argc, char** argv) {
+    // No arguments passed
+    if (argc < 2) {
+        fprintf(stderr, "missing arguments\n");
+        printUsage();
+        exit(EXIT_FAILURE);
+    }
+
+    // Process all the arguments
+    for (int i = 1; i < argc; i++) {
+        std::string token = argv[i];
+
+        if (token.find("--skip-boot-rom") != std::string::npos) {
+            skipBootRom = true;
+            continue;
+        }
+
+        // If the user entered another option, it is unrecognized.
+        if (token.find("--") != std::string::npos) {
+            fprintf(stderr, "invalid option passed.\n");
+            printUsage();
+            exit(EXIT_FAILURE);
+        }
+
+        // If no strCmps worked prior to reaching this point,
+        // the expected argument is the rom path.
+        romPath = token;
+    }
+}
 
 void signalHandler(int signal) {
     fprintf(stdout, "caught interrupt signal, terminating.\n");
@@ -34,27 +77,15 @@ void signalHandler(int signal) {
 }
 
 void keyboardHandler(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    if (gameboy != NULL) 
+    if (gameboy != NULL)
         gameboy->HandleKeyboardInput(key, scancode, action, mods);
-}
-
-void printUsage() {
-    fprintf(stdout, "FuuGBemu\n");
-    fprintf(stdout, "Usage:\n");
-    fprintf(stdout, "\tFuuGBemu [OPTIONS] <rom path>\n");
-    fprintf(stdout, "Options:\n");
 }
 
 int main(int argc, char** argv) {
 
-    // If user did not specify rom path, remind them to :)
-    if (argc < 2) {
-        fprintf(stderr, "missing rom path\n");
-        printUsage();
-        return EXIT_FAILURE;
-    }
+    parseArguments(argc, argv);
 
-    std::fstream romFile(argv[1], std::ios::in | std::ios::binary);
+    std::fstream romFile(romPath, std::ios::in | std::ios::binary);
     if (!romFile.good()) {
         fprintf(stderr, "error reading rom file: %s\n", strerror(errno));
         printUsage();
@@ -108,13 +139,18 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    #ifdef FUUGB_DEBUG
-        glEnable(GL_DEBUG_OUTPUT);
-        glDebugMessageCallback(MessageCallback, 0);
-    #endif
+#ifdef FUUGB_DEBUG
+    glEnable(GL_DEBUG_OUTPUT);
+    glDebugMessageCallback(MessageCallback, 0);
+#endif
 
     // Create a gameboy instance
     gameboy = new Gameboy((uBYTE*)romData, window);
+
+    // If the user wants to skip boot rom, set the state on the gameboy
+    if (skipBootRom) {
+        gameboy->SkipBootRom();
+    }
 
     // Set viewport
     glViewport(0, 0, NATIVE_SIZE_X * SCALE, NATIVE_SIZE_Y * SCALE);
@@ -137,7 +173,7 @@ int main(int argc, char** argv) {
     // Here all we want the main thread to do
     // is handle window events.
     // The gameboy will handle swapping of buffers
-    while(!glfwWindowShouldClose(window)) {
+    while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
     }
 

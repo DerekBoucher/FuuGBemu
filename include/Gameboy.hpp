@@ -24,6 +24,7 @@ public:
     void Stop();
     void Pause();
     void Resume();
+    void SkipBootRom();
 
     void HandleKeyboardInput(int key, int scancode, int action, int modBits);
 

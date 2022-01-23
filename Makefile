@@ -27,11 +27,12 @@ OBJECTS = $(CPP_SOURCES:$(SRC_PATH)/%.cpp=$(BUILD_PATH)/%.o)
 
 debug: makeDirs
 	@echo "Building debug x86_64..."
-	@$(eval export DEBUG_FLAGS = -g -DFUUGB_DEBUG)
+	@$(eval export DEBUG_FLAGS =-g -DFUUGB_DEBUG)
 	@$(MAKE) $(BIN_PATH)/$(BIN_NAME)
 
 release: makeDirs
 	@echo "Building release x86_64..."
+	@$(eval export RELEASE_FLAGS =-O3)
 	@$(MAKE) $(BIN_PATH)/$(BIN_NAME)
 
 makeDirs:
@@ -55,4 +56,4 @@ $(BIN_PATH)/$(BIN_NAME) : $(OBJECTS)
 
 $(BUILD_PATH)/%.o: $(SRC_PATH)/%.cpp
 	@echo "Compiling: $< -> $@"
-	$(CXX) $(COMPILE_FLAGS) $(DEBUG_FLAGS) -MP -MMD -c $< -o $@
+	$(CXX) $(COMPILE_FLAGS) $(DEBUG_FLAGS) $(RELEASE_FLAGS) -MP -MMD -c $< -o $@

@@ -6,29 +6,48 @@ Algorithm for the PPU and Memory Management are taken from http://www.codeslinge
 
 All credit goes to codeslinger!
 
-<img src="images/DrMario.JPG" width=30% height=30%> <img src="images/Flipull.JPG" width=30% height=30%> <img src="images/PipeDream.JPG" width=30% height=30%>
+<img src="images/DrMario.png" width=30% height=30%> <img src="images/Tetris.png" width=30% height=30%> <img src="images/Zelda.png" width=30% height=30%>
 
 ## How To Build
     MAC OS X
-        (coming soon)
+        (not supported yet)
     
     WINDOWS
-        (coming soon)
+        (not supported yet)
 
     LINUX/UBUNTU
-        1.  Make sure you have the SDL2 development libraries installed. You can get them via your distro's
+        1.  Make sure you have the build-essential package installed. You will also need some OpenGL libraries. You can get all of those dependencies via your distro's
             package manager. For Ubuntu:
-                sudo apt-get install libsdl2-dev
-        2.  Download source code for latest stable release of wxWidgets for Linux: 
-                https://www.wxwidgets.org/downloads/
-        3.  Follow instructions to build/install wxWidgets: 
-                https://docs.wxwidgets.org/trunk/plat_gtk_install.html
-        4.  Make sure to configure the library with the following options:
-                ./configure --with-gtk=3 --with-opengl --enable-debug
-        5.  Execute the following command from the root of this repo:
+                sudo apt install build-essential libglfw3-dev libglew-dev
+            P.S. The build-essential package includes most of the GNU Toolchain such as make, gcc/g++, etc...
+        2.  Execute the following command from the root of this repo:
                 make debug
-        6.  You might need to make the binary executable:
+            Or
+                make release
+            if you wish to have an optimized binary without debug symbols.
+        3.  You might need to make the binary executable:
                 sudo chmod -x FuuGBemu
+
+## Usage
+
+    FuuGBemu
+    Usage:
+        FuuGBemu [OPTIONS] <rom path>
+    Options:
+        --skip-boot-rom     Skips the boot rom and enters the game code immediately.
+
+## Controls
+
+    Host Machine -> Emulated Control
+    --------------------------------
+    Arrow Keys -> D-Pad
+    Z -> A
+    X -> B
+    C -> Start
+    V -> Select
+
+    *Controls are currently hardcoded, but will be configurable in the future.
+
 
 ## Emulation Accuracy Testing
 
@@ -46,7 +65,7 @@ All credit goes to codeslinger!
 |05-op rp		| :heavy_check_mark:	|
 |06-ld r,r		| :heavy_check_mark:	|
 |07-jr,jp,call,ret,rst	| :heavy_check_mark:	|
-|08-misc instrs		| :heavy_check_mark: |
+|08-misc instrs		| :heavy_check_mark:	|
 |09-op r,r		| :heavy_check_mark:	|
 |10-bit ops		| :heavy_check_mark:	|
 |11-op a,(hl)		| :heavy_check_mark:	|

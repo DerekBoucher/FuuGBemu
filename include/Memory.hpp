@@ -39,6 +39,7 @@ typedef unsigned short uWORD;
 class Memory {
 
     friend class Gameboy;
+    friend class Apu;
 
 public:
     Memory();

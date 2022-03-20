@@ -526,18 +526,12 @@ void Memory::Write(uWORD addr, uBYTE data)
         }
         else if (addr == 0xFF40) // LCDC Register
         {
-            uBYTE mode = getStatMode();
-            if (!(data & 0x80))
-            {
-                if (mode != 1)
-                {
-                    data |= 0x80;
-                }
-            }
             rom[addr] = data;
         }
         else if (addr == 0xFF41) // STAT Register
         {
+            // This weird hackery is to ensure that read only bits
+            // are not being overwritten. (bits 0-2 are read only)
             uBYTE temp = rom[addr] & 0x07;
             data |= 0x80;
             data = data & 0xF8;
@@ -668,9 +662,9 @@ uBYTE Memory::Read(uWORD addr, bool debugRead)
         uBYTE mode = getStatMode();
 
         if (mode == 3)
-            return rom[addr];
+            return 0xFF;
 
-        return 0xFF;
+        return rom[addr];
     }
     else if ((addr >= 0xA000) && (addr < 0xC000) && !dmaTransferInProgress) // External RAM
     {

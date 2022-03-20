@@ -4,6 +4,7 @@
 #include "Ppu.hpp"
 #include "Memory.hpp"
 #include "Cpu.hpp"
+#include "Apu.hpp"
 
 #include <thread>
 #include <iostream>
@@ -33,6 +34,7 @@ private:
 
     Cpu cpu;
     Ppu ppu;
+    Apu apu;
     Memory memory;
     bool running;
     std::mutex mtx;

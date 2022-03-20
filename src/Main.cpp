@@ -7,6 +7,7 @@
 #include <csignal>
 
 #include "Gameboy.hpp"
+#include "Apu.hpp"
 
 #define NATIVE_SIZE_X 160
 #define NATIVE_SIZE_Y 144
@@ -56,6 +57,14 @@ void parseArguments(int argc, char** argv) {
         if (token.find("--skip-boot-rom") != std::string::npos) {
             skipBootRom = true;
             continue;
+        }
+
+        if (token.find("--test-audio") != std::string::npos) {
+            Apu apu = Apu();
+            apu.PlaySample();
+            apu.WaitFlush();
+
+            exit(EXIT_SUCCESS);
         }
 
         // If the user entered another option, it is unrecognized.

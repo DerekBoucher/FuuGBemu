@@ -53,8 +53,8 @@ void Ppu::InitializeGLBuffers() {
     positionVBO->Generate(positionVertices, sizeof(positionVertices));
 
     // Add the vertex buffers to the vertex array
-    vao->AddBuffer(*positionVBO.get(), {0, 2, GL_FLOAT, sizeof(GLfloat) * 2, NULL});
-    vao->AddBuffer(*colorVBO.get(), {1, 3, GL_FLOAT, sizeof(GLfloat) * 3, NULL});
+    vao->AddBuffer(*positionVBO.get(), { 0, 2, GL_FLOAT, sizeof(GLfloat) * 2, NULL });
+    vao->AddBuffer(*colorVBO.get(), { 1, 3, GL_FLOAT, sizeof(GLfloat) * 3, NULL });
 }
 
 void Ppu::BindContext() {
@@ -155,7 +155,7 @@ void Ppu::UpdateGraphics(int cycles) {
         if (currentScanline < 144) {
             DrawScanline();
         }
-        
+
         // If we are in vblank, request an interupt
         else if (currentScanline >= 144 && currentScanline < 154) {
             memoryRef->RequestInterupt(VBLANK_INT);
@@ -246,7 +246,7 @@ void Ppu::RenderTiles() {
         if (unsignedID) {
             tileDataAdr = tileDataPtr + (tileID * 16);
         }
-        
+
         else {
             if (tileID & 0x80) {
                 tileID = ~tileID;
@@ -288,7 +288,7 @@ void Ppu::RenderSprites()
         u_8x16 = true;
     }
 
-    sprite *sprites = ProcessSprites();
+    sprite* sprites = ProcessSprites();
 
     for (uBYTE i = 0; i < 40; i++) {
         bool yFlip = (sprites[i].attributes & (1 << 6));
@@ -454,9 +454,9 @@ uBYTE Ppu::GetStat()
     return memoryRef->DmaRead(STAT_ADR);
 }
 
-Ppu::sprite *Ppu::ProcessSprites()
+Ppu::sprite* Ppu::ProcessSprites()
 {
-    sprite *processedSprites = new sprite[40];
+    sprite* processedSprites = new sprite[40];
 
     for (uBYTE i = 40; i != 255; i--)
     {
@@ -544,5 +544,5 @@ Ppu::pixel Ppu::DeterminePixelRGB(uBYTE colorCode, uWORD colorAdr) {
         break;
     }
 
-    return {R, G, B, colorCode};
+    return { R, G, B, colorCode };
 }

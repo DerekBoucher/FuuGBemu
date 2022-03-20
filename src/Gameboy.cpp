@@ -23,6 +23,9 @@ Gameboy::Gameboy(uBYTE romData[MAX_CART_SIZE], GLFWwindow* context) {
     ppu.AttachShaders(vertexShader, fragmentShader);
     ppu.SetMemory(&memory);
     ppu.InitializeGLBuffers();
+
+    // Set up Apu
+    apu = Apu(&memory);
 }
 
 void Gameboy::Wait() {
@@ -84,6 +87,8 @@ void Gameboy::Run() {
             cyclesThisUpdate += cycles;
             ppu.UpdateGraphics(cycles);
             memory.UpdateDmaCycles(cycles);
+            apu.UpdateSoundRegisters(cycles);
+            apu.AddSampleToBuffer(cycles);
 
             // Process interrupts
             if (!cpu.Halted) {

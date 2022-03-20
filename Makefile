@@ -2,7 +2,7 @@
 CXX = g++
 INCLUDES = -Iinclude/
 COMPILE_FLAGS = -std=c++17 -Wall -pthread $(INCLUDES)
-LIBS = -lGL -lglfw -lGLEW  -lpthread
+LIBS = -lGL -lglfw -lGLEW  -lpthread -lpulse-simple -lpulse
 SRC_PATH = src
 BUILD_PATH = build
 BIN_PATH = $(BUILD_PATH)/bin

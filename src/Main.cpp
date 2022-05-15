@@ -59,14 +59,6 @@ void parseArguments(int argc, char** argv) {
             continue;
         }
 
-        if (token.find("--test-audio") != std::string::npos) {
-            Apu apu = Apu();
-            apu.PlaySample();
-            apu.WaitFlush();
-
-            exit(EXIT_SUCCESS);
-        }
-
         // If the user entered another option, it is unrecognized.
         if (token.find("--") != std::string::npos) {
             fprintf(stderr, "invalid option passed.\n");

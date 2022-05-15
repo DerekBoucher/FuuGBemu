@@ -50,7 +50,7 @@
 #define FRAME_SEQUENCE_SWEEP_CLOCK_2 2
 #define FRAME_SEQUENCE_SWEEP_CLOCK_6 6
 #define CPU_FREQUENCY 4194304
-#define APU_SAMEPLE_RATE 44100
+#define APU_SAMPLE_RATE 44100
 
 class Apu {
 
@@ -59,53 +59,28 @@ public:
     Apu(Memory* memRef);
     ~Apu();
 
-    void PlaySample();
-    void WaitFlush();
-    void ProcessChannel2();
     void UpdateSoundRegisters(int cycles);
-    void AddSampleToBuffer(int cycles);
 private:
     void FlushBuffer();
+    int DetermineChannel2FrequencyTimerValue();
+
+    pa_context_state_t paContextState = PA_CONTEXT_UNCONNECTED;
+
+    uBYTE DetermineChannel2WavePattern();
 
     Memory* memRef;
-    uBYTE channel2DutyPosition;
-    int ch2FrequencyTimer;
-    int ch4FrequencyTimer;
 
-    uWORD ch4LFSR;
-    int frameSequencerTimer;
-    uBYTE frameSequencerStep;
-
-    int ch1EnvelopeTimer;
-    int ch2EnvelopeTimer;
-    int ch4EnvelopeTimer;
-
-    int ch1EnvelopeVolume;
-    int ch2EnvelopeVolume;
-    int ch4EnvelopeVolume;
-
-    bool sweepEnabled;
-    int shadowFrequency;
-    int sweepTimer;
-    int currentFrequency;
-
-    int ch1LengthTimer;
-    int ch2LengthTimer;
-    int ch3LengthTimer;
-    int ch4LengthTimer;
-
-    uBYTE leftSample;
-    uBYTE rightSample;
+    uBYTE ch2Amplitude;
+    uBYTE ch2WaveDutyPointer;
+    uBYTE buffer[BUFFER];
 
     int addToBufferTimer;
-    int currentPositionBuffer;
-    int currentBuffer;
+    int ch2FrequencyTimer;
+    int currentSampleBufferPosition;
 
 #ifdef FUUGB_SYSTEM_LINUX
     pa_simple* audioClient;
 #endif
-
-    uint8_t buffer[2][BUFFER];
 
 };
 

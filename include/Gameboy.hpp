@@ -34,7 +34,7 @@ private:
 
     Cpu cpu;
     Ppu ppu;
-    Apu apu;
+    Apu* apu;
     Memory memory;
     bool running;
     std::mutex mtx;

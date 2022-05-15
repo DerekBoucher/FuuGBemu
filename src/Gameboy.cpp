@@ -4,10 +4,11 @@ const int CyclesPerFrame = 69905;
 
 Gameboy::Gameboy() {}
 
-Gameboy::~Gameboy() {}
+Gameboy::~Gameboy() {
+    delete apu;
+}
 
 Gameboy::Gameboy(uBYTE romData[MAX_CART_SIZE], GLFWwindow* context) {
-
     // Set up memory
     memory.ReadRom(romData);
 
@@ -25,7 +26,7 @@ Gameboy::Gameboy(uBYTE romData[MAX_CART_SIZE], GLFWwindow* context) {
     ppu.InitializeGLBuffers();
 
     // Set up Apu
-    apu = Apu(&memory);
+    apu = new Apu(&memory);
 }
 
 void Gameboy::Wait() {
@@ -52,7 +53,6 @@ void Gameboy::SkipBootRom() {
 }
 
 void Gameboy::Run() {
-
     // Set the context as current on this thread
     ppu.BindContext();
 
@@ -87,8 +87,7 @@ void Gameboy::Run() {
             cyclesThisUpdate += cycles;
             ppu.UpdateGraphics(cycles);
             memory.UpdateDmaCycles(cycles);
-            apu.UpdateSoundRegisters(cycles);
-            apu.AddSampleToBuffer(cycles);
+            apu->UpdateSoundRegisters(cycles);
 
             // Process interrupts
             if (!cpu.Halted) {

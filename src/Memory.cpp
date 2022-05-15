@@ -514,8 +514,7 @@ void Memory::Write(uWORD addr, uBYTE data)
         }
         else if (addr == 0xFF26) // Sound On/Off
         {
-            data = (data & 0x80) | (rom[addr] & 0x7F); // Only bit 7 is writable
-            rom[addr] = data;
+            rom[addr] |= (data & (1 << 7)); // Only bit 7 is writeable
         }
         else if ((addr >= 0xFF30) && (addr < 0xFF40)) // Wave Pattern RAM
         {

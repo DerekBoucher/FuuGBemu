@@ -100,6 +100,7 @@ void Apu::UpdateSoundRegisters(int cycles) {
 
     uBYTE nr51 = memRef->rom[NR51];
     uBYTE nr52 = memRef->rom[NR52];
+    uBYTE nr50 = memRef->rom[NR50];
 
     // If we are currently working with the right
     // stereo sample, modulo 2 returns 1
@@ -119,7 +120,19 @@ void Apu::UpdateSoundRegisters(int cycles) {
     }
 
     // Mix the amplitudes of all channels
-    uBYTE sample = (ch2Amplitude) / 1;
+    uBYTE sample = ch2Amplitude / 1;
+    uBYTE volume = 0;
+
+    // Apply Right volume modifier
+    if (currentSampleBufferPosition % 2) {
+        volume = (nr50 & (0b00000111));
+    }
+    // Apply left volume modifier
+    else {
+        volume = (nr50 & (0b01110000)) >> 4;
+    }
+
+    sample = sample * volume;
 
     // TODO: Determine what to do with NR52 bits 0-3
 

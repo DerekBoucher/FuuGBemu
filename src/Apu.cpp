@@ -30,7 +30,6 @@ Apu::Apu(Memory* memRef) {
 
     addToBufferTimer = CPU_FREQUENCY / APU_SAMPLE_RATE;
 
-    ch2Amplitude = 0;
     ch2FrequencyTimer = 0;
     ch2WaveDutyPointer = 0;
     currentSampleBufferPosition = 0;
@@ -55,7 +54,6 @@ void Apu::FlushBuffer() {
 }
 
 void Apu::UpdateSoundRegisters(int cycles) {
-
     // First, check if it is time to add a sample to the
     // audio buffer. We only need to send samples every
     // CPU_FREQUENCY / APU_SAMPLE_RATE cycles (which equates to 87 cycles, in this case)
@@ -67,45 +65,19 @@ void Apu::UpdateSoundRegisters(int cycles) {
     // If it is time to add new samples, refresh the timer value.
     addToBufferTimer = CPU_FREQUENCY / APU_SAMPLE_RATE;
 
-    /**
-    * Channel 2 Updates
-    */
+    // Channel 2
+    uBYTE ch2Amplitude = ComputeChannel2Amplitude();
 
-    // First, decrement the frequency timer for the channel
-    ch2FrequencyTimer--;
+    // Mix the amplitudes of all channels
+    uBYTE sample = ch2Amplitude / 1;
 
-    // If this results in the timer reaching 0, then we
-    // reset the timer's value with what is in NR24 (bits 2-0) | NR23 (11 bit value).
-    // we also increment the wave pattern pointer when this happens.
-    if (ch2FrequencyTimer <= 0) {
-        ch2FrequencyTimer = DetermineChannel2FrequencyTimerValue();
-
-        // The pointer value can only be within 0-7, and loops back once it
-        // reaches 8.
-        ch2WaveDutyPointer = (ch2WaveDutyPointer + 1) % 8;
-    }
-
-    // Finally, compute the channel's amplitude
-    uBYTE wavePattern = DetermineChannel2WavePattern();
-    if (wavePattern & (1 << ch2WaveDutyPointer)) {
-        ch2Amplitude = 255;
-    }
-    else {
-        ch2Amplitude = 0;
-    }
-
-    /**
-    * Channel mixing
-    */
-
+    uBYTE nr50 = memRef->rom[NR50];
     uBYTE nr51 = memRef->rom[NR51];
     uBYTE nr52 = memRef->rom[NR52];
-    uBYTE nr50 = memRef->rom[NR50];
 
     // If we are currently working with the right
     // stereo sample, modulo 2 returns 1
     if (currentSampleBufferPosition % 2) {
-
         // Verify if NR51 register disables the right output for channel 2
         if ((nr51 & (1 << 5)) == 0) {
             ch2Amplitude = 0;
@@ -119,8 +91,6 @@ void Apu::UpdateSoundRegisters(int cycles) {
         }
     }
 
-    // Mix the amplitudes of all channels
-    uBYTE sample = ch2Amplitude / 1;
     uBYTE volume = 0;
 
     // Apply Right volume modifier
@@ -180,4 +150,33 @@ int Apu::DetermineChannel2FrequencyTimerValue() {
     // These values were pulled from the gbdev pandocs
     // https://gbdev.io/pandocs/Sound_Controller.html#ff19---nr24---channel-2-frequency-hi-data-rw
     return (131072 / (2048 - frequencyQuotient));
+}
+
+uBYTE Apu::ComputeChannel2Amplitude() {
+    uBYTE ch2Amplitude = 0;
+
+    // First, decrement the frequency timer for the channel
+    ch2FrequencyTimer--;
+
+    // If this results in the timer reaching 0, then we
+    // reset the timer's value with what is in NR24 (bits 2-0) | NR23 (11 bit value).
+    // we also increment the wave pattern pointer when this happens.
+    if (ch2FrequencyTimer <= 0) {
+        ch2FrequencyTimer = DetermineChannel2FrequencyTimerValue();
+
+        // The pointer value can only be within 0-7, and loops back once it
+        // reaches 8.
+        ch2WaveDutyPointer = (ch2WaveDutyPointer + 1) % 8;
+    }
+
+    // Finally, compute the channel's amplitude
+    uBYTE wavePattern = DetermineChannel2WavePattern();
+    if (wavePattern & (1 << ch2WaveDutyPointer)) {
+        ch2Amplitude = 255;
+    }
+    else {
+        ch2Amplitude = 0;
+    }
+
+    return ch2Amplitude;
 }

@@ -63,6 +63,7 @@ public:
 private:
     void FlushBuffer();
     int DetermineChannel2FrequencyTimerValue();
+    uBYTE ComputeChannel2Amplitude();
 
     pa_context_state_t paContextState = PA_CONTEXT_UNCONNECTED;
 
@@ -70,7 +71,6 @@ private:
 
     Memory* memRef;
 
-    uBYTE ch2Amplitude;
     uBYTE ch2WaveDutyPointer;
     uBYTE buffer[BUFFER];
 

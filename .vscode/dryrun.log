@@ -1,0 +1,34 @@
+make --dry-run --always-make --keep-going --print-directory
+make: Entering directory '/home/derek/go/src/github.com/derek.boucher/FuuGBemu'
+echo "Creating directories"
+mkdir -p build/ build/ build/ build/ build/ build/ build/opengl/ build/opengl/ build/opengl/
+mkdir -p build/bin
+echo "Building debug x86_64..."
+make build/bin/FuuGBemu
+make[1]: Entering directory '/home/derek/go/src/github.com/derek.boucher/FuuGBemu'
+echo "Compiling: src/Apu.cpp -> build/Apu.o"
+g++ -std=c++17 -Wall -pthread -Iinclude/ -DFUUGB_SYSTEM_LINUX -g -DFUUGB_DEBUG  -MP -MMD -c src/Apu.cpp -o build/Apu.o
+echo "Compiling: src/Cpu.cpp -> build/Cpu.o"
+g++ -std=c++17 -Wall -pthread -Iinclude/ -DFUUGB_SYSTEM_LINUX -g -DFUUGB_DEBUG  -MP -MMD -c src/Cpu.cpp -o build/Cpu.o
+echo "Compiling: src/Gameboy.cpp -> build/Gameboy.o"
+g++ -std=c++17 -Wall -pthread -Iinclude/ -DFUUGB_SYSTEM_LINUX -g -DFUUGB_DEBUG  -MP -MMD -c src/Gameboy.cpp -o build/Gameboy.o
+echo "Compiling: src/Main.cpp -> build/Main.o"
+g++ -std=c++17 -Wall -pthread -Iinclude/ -DFUUGB_SYSTEM_LINUX -g -DFUUGB_DEBUG  -MP -MMD -c src/Main.cpp -o build/Main.o
+echo "Compiling: src/Memory.cpp -> build/Memory.o"
+g++ -std=c++17 -Wall -pthread -Iinclude/ -DFUUGB_SYSTEM_LINUX -g -DFUUGB_DEBUG  -MP -MMD -c src/Memory.cpp -o build/Memory.o
+echo "Compiling: src/Ppu.cpp -> build/Ppu.o"
+g++ -std=c++17 -Wall -pthread -Iinclude/ -DFUUGB_SYSTEM_LINUX -g -DFUUGB_DEBUG  -MP -MMD -c src/Ppu.cpp -o build/Ppu.o
+echo "Compiling: src/opengl/Shader.cpp -> build/opengl/Shader.o"
+g++ -std=c++17 -Wall -pthread -Iinclude/ -DFUUGB_SYSTEM_LINUX -g -DFUUGB_DEBUG  -MP -MMD -c src/opengl/Shader.cpp -o build/opengl/Shader.o
+echo "Compiling: src/opengl/Vao.cpp -> build/opengl/Vao.o"
+g++ -std=c++17 -Wall -pthread -Iinclude/ -DFUUGB_SYSTEM_LINUX -g -DFUUGB_DEBUG  -MP -MMD -c src/opengl/Vao.cpp -o build/opengl/Vao.o
+echo "Compiling: src/opengl/Vbo.cpp -> build/opengl/Vbo.o"
+g++ -std=c++17 -Wall -pthread -Iinclude/ -DFUUGB_SYSTEM_LINUX -g -DFUUGB_DEBUG  -MP -MMD -c src/opengl/Vbo.cpp -o build/opengl/Vbo.o
+echo "Linking build/Apu.o build/Cpu.o build/Gameboy.o build/Main.o build/Memory.o build/Ppu.o build/opengl/Shader.o build/opengl/Vao.o build/opengl/Vbo.o -> build/bin/FuuGBemu"
+g++ build/Apu.o build/Cpu.o build/Gameboy.o build/Main.o build/Memory.o build/Ppu.o build/opengl/Shader.o build/opengl/Vao.o build/opengl/Vbo.o -o build/bin/FuuGBemu -lGL -lglfw -lGLEW  -lpthread -lpulse-simple -lpulse
+echo "Making symlink: build/bin/FuuGBemu -> FuuGBemu"
+rm -f FuuGBemu
+ln -s build/bin/FuuGBemu FuuGBemu
+make[1]: Leaving directory '/home/derek/go/src/github.com/derek.boucher/FuuGBemu'
+make: Leaving directory '/home/derek/go/src/github.com/derek.boucher/FuuGBemu'
+ 

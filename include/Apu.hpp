@@ -51,6 +51,8 @@
 #define FRAME_SEQUENCE_SWEEP_CLOCK_6 6
 #define CPU_FREQUENCY 4194304
 #define APU_SAMPLE_RATE 48000
+#define INCREASING true
+#define DECREASING false
 
 class Apu {
 
@@ -62,11 +64,14 @@ public:
     void UpdateSoundRegisters(int cycles);
 private:
     void FlushBuffer();
+    void UpdateFrameSequencer(int cycles);
+
     int DetermineChannel2FrequencyTimerValue();
+    int DetermineChannel1Frequency(bool direction, uBYTE shiftAmount);
+
+    uBYTE ComputeChannel1Ampltiude();
     uBYTE ComputeChannel2Amplitude();
-
-    pa_context_state_t paContextState = PA_CONTEXT_UNCONNECTED;
-
+    uBYTE DetermineChannel1WavePattern();
     uBYTE DetermineChannel2WavePattern();
 
     Memory* memRef;
@@ -77,6 +82,28 @@ private:
     int addToBufferTimer;
     int ch2FrequencyTimer;
     int currentSampleBufferPosition;
+    int frameSequencerTimer;
+    int frameSequencerStep;
+    int ch1ShadowFrequency;
+    int ch1Frequency;
+
+    uBYTE ch1VolumeTimer;
+    uBYTE ch1CurrentVolume;
+    uBYTE ch1SweepTimer;
+
+    uBYTE ch1LengthTimer;
+
+    int ch1FrequencyTimer;
+    int ch2LengthTimer;
+    bool ch2Disabled;
+
+    bool lengthControlTick;
+    bool volumeEnvelopeTick;
+    bool sweepTick;
+    bool ch1Disabled;
+
+    uBYTE ch2CurrentVolume;
+    int ch2VolumeTimer;
 
 #ifdef FUUGB_SYSTEM_LINUX
     pa_simple* audioClient;

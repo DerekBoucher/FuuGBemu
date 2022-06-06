@@ -56,6 +56,11 @@ void Gameboy::Run() {
     // Set the context as current on this thread
     ppu.BindContext();
 
+#ifdef FUUGB_DEBUG
+    int frames = 0;
+    double lastTimestamp = glfwGetTime();
+#endif
+
     // Main gameboy loop
     while (running) {
 
@@ -97,6 +102,16 @@ void Gameboy::Run() {
 
         // Render screen
         ppu.Render();
+
+#ifdef FUUGB_DEBUG
+        frames++;
+        double currentTime = glfwGetTime();
+        if (currentTime - lastTimestamp >= 1.0) {
+            std::cout << "FPS: " << frames << std::endl;
+            frames = 0;
+            lastTimestamp = glfwGetTime();
+        }
+#endif
     }
 }
 

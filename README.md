@@ -15,10 +15,10 @@ All credit goes to codeslinger!
     WINDOWS
         (not supported yet)
 
-    LINUX/UBUNTU
+    LINUX/UBUNTU/DEBIAN
         1.  Make sure you have the build-essential package installed. You will also need some OpenGL libraries. You can get all of those dependencies via your distro's
             package manager. For Ubuntu:
-                sudo apt install build-essential libglfw3-dev libglew-dev
+                sudo apt install build-essential libglfw3-dev libglew-dev libpulse-dev
             P.S. The build-essential package includes most of the GNU Toolchain such as make, gcc/g++, etc...
         2.  Execute the following command from the root of this repo:
                 make debug

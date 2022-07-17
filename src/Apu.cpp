@@ -1,5 +1,19 @@
 #include "Apu.hpp"
 
+void lengthFunction(uBYTE& lengthTimer, bool& chDisabled);
+void frequencySweepFunction(uBYTE& sweepTimer,
+    int& chFrequency,
+    int& chShadowFrequency,
+    bool& chDisabled,
+    bool sweepEnabled,
+    int sweepPeriod,
+    bool sweepDirection,
+    uBYTE sweepShift);
+void volumeEnvelopeFunction(int& volumeTimer, uBYTE& currentVolume, uBYTE volumePeriod, bool envelopeDirection);
+int determineChannelFrequency(bool direction, uBYTE shiftAmount, int shadowFrequency);
+uBYTE computeVolumeModifier(uBYTE currentVolume);
+uBYTE determineChannelWavePattern(uBYTE nrx1);
+
 Apu::Apu() {}
 
 Apu::Apu(Memory* memRef) {
@@ -32,6 +46,7 @@ Apu::Apu(Memory* memRef) {
 
     ch2FrequencyTimer = 0;
     ch2WaveDutyPointer = 0;
+    ch1WaveDutyPointer = 0;
     currentSampleBufferPosition = 0;
     frameSequencerTimer = FRAME_SEQUENCER_CYCLES;
     frameSequencerStep = 0;
@@ -44,10 +59,31 @@ Apu::Apu(Memory* memRef) {
     ch2Disabled = true;
     ch1VolumeTimer = 0;
     ch2CurrentVolume = 0;
+
+    flusherRunning = true;
+    apuFlusher = std::unique_ptr<std::thread>(new std::thread(&Apu::FlusherRoutine, this));
 }
 
 Apu::~Apu() {
+    flusherRunning = false;
+    loopCv.notify_one();
+    if (apuFlusher->joinable()) {
+        apuFlusher->join();
+    }
     pa_simple_free(audioClient);
+}
+
+void Apu::FlusherRoutine() {
+    while (flusherRunning) {
+        std::unique_lock<std::mutex> bufferLock(loopMtx);
+        loopCv.wait(bufferLock);
+        FlushBuffer();
+        bufferLock.unlock();
+    }
+}
+
+void Apu::NotifyFlusher() {
+    loopCv.notify_one();
 }
 
 void Apu::FlushBuffer() {
@@ -155,40 +191,9 @@ void Apu::UpdateSoundRegisters(int cycles) {
         // is completely shut off. Only flush the buffer if the master
         // switch is ON.
         if ((nr52 & (1 << 7))) {
-            FlushBuffer();
+            NotifyFlusher();
         }
     }
-}
-
-uBYTE Apu::DetermineChannel2WavePattern() {
-    // Wave duty identifier is found in bit 7-6 of NR21
-    uBYTE waveDuty = ((memRef->rom[NR21] & (0b11000000)) >> 6);
-    uBYTE wavePattern = 0;
-
-    switch (waveDuty) {
-    case 0: wavePattern = DUTY1; break;
-    case 1: wavePattern = DUTY2; break;
-    case 2: wavePattern = DUTY3; break;
-    case 3: wavePattern = DUTY4; break;
-    default:
-#ifdef FUUGB_DEBUG
-        fprintf(stderr, "[APU] invalid wave duty id was calculated when determining channel 2 wave pattern: %d\n", waveDuty);
-#endif
-        exit(EXIT_FAILURE);
-    }
-
-    return wavePattern;
-}
-
-int Apu::DetermineChannel2FrequencyTimerValue() {
-    uBYTE hiByte = memRef->rom[NR24] & 0b00000111;
-    uBYTE loByte = memRef->rom[NR23];
-
-    int frequencyQuotient = (hiByte << 8) | loByte;
-
-    // These values were pulled from the gbdev pandocs
-    // https://gbdev.io/pandocs/Sound_Controller.html#ff19---nr24---channel-2-frequency-hi-data-rw
-    return (131072 / (2048 - frequencyQuotient));
 }
 
 uBYTE Apu::ComputeChannel1Ampltiude() {
@@ -239,7 +244,7 @@ uBYTE Apu::ComputeChannel1Ampltiude() {
         }
 
         if (sweepShift > 0) {
-            int newFrequency = DetermineChannel1Frequency(sweepDirection, sweepShift);
+            int newFrequency = determineChannelFrequency(sweepDirection, sweepShift, ch1ShadowFrequency);
 
             if (newFrequency > 2047) {
                 ch1Disabled = true;
@@ -251,83 +256,35 @@ uBYTE Apu::ComputeChannel1Ampltiude() {
         }
     }
 
-    if (volumeEnvelopeTick) {
+    // First, decrement the frequency timer for the channel
+    ch1FrequencyTimer--;
 
-        // If the period in NR12 is 0,
-        // nothing to do.
-        if (volumePeriod == 0) {
-            goto skip_volume_env_1;
-        }
-
-        ch1VolumeTimer--;
-
-        // Only proceed with the volume envelope
-        // if the decrement resulted in the period timer becoming 0
-        if (ch1VolumeTimer != 0) {
-            goto skip_volume_env_1;
-        }
-
-        // Reload the volume timer
-        ch1VolumeTimer = volumePeriod;
-
-        // Update the current volume
-        if (volumeDirection == INCREASING && ch1CurrentVolume < 0xF) {
-            ch1CurrentVolume++;
-        }
-
-        if (volumeDirection == DECREASING && ch1CurrentVolume > 0x0) {
-            ch1CurrentVolume--;
-        }
+    // Fetch the raw wave pattern amplitude for channel 1
+    uBYTE wavePattern = determineChannelWavePattern(nr11);
+    if (wavePattern & (1 << ch1WaveDutyPointer)) {
+        ch1Amplitude = 127;
+    }
+    else {
+        ch1Amplitude = 0;
     }
 
-skip_volume_env_1:
+    if (volumeEnvelopeTick) {
+        volumeEnvelopeFunction(ch1VolumeTimer, ch1CurrentVolume, volumePeriod, volumeDirection);
+    }
 
     if (sweepTick) {
-
-        if (ch1SweepTimer > 0) {
-            ch1SweepTimer--;
-        }
-
-        // Only proceed with the frequency sweep
-        // if and only if the sweep timer became 0
-        if (ch1SweepTimer != 0) {
-            goto skip_sweep_env_1;
-        }
-
-        // Reload the sweep timer with the period.
-        // If NR10 contained a 0 period, the timer 
-        // defaults to 8.
-        ch1SweepTimer = sweepPeriod;
-        if (ch1SweepTimer == 0) {
-            ch1SweepTimer = 8;
-        }
-
-        if (sweepEnabled && sweepPeriod > 0) {
-            int newFrequency = DetermineChannel1Frequency(sweepDirection, sweepShift);
-
-            if (newFrequency < 2048 && sweepShift > 0) {
-                ch1Frequency = newFrequency;
-                ch1ShadowFrequency = newFrequency;
-
-                // Recalculate the frequency, simply to detect if
-                // it overflows with these new shadow frequencies.
-                newFrequency = DetermineChannel1Frequency(sweepDirection, sweepShift);
-            }
-
-            if (newFrequency > 2047) {
-                ch1Disabled = true;
-            }
-        }
+        frequencySweepFunction(ch1SweepTimer,
+            ch1Frequency,
+            ch1ShadowFrequency,
+            ch1Disabled,
+            sweepEnabled,
+            sweepPeriod,
+            sweepDirection,
+            sweepShift);
     }
 
-skip_sweep_env_1:
-
     if (lengthControlTick && lengthEnabled) {
-        ch1LengthTimer--;
-
-        if (ch1LengthTimer == 0) {
-            ch1Disabled = true;
-        }
+        lengthFunction(ch1LengthTimer, ch1Disabled);
     }
 
     return ch1Amplitude;
@@ -338,6 +295,7 @@ uBYTE Apu::ComputeChannel2Amplitude() {
 
     uBYTE nr21 = memRef->rom[NR21];
     uBYTE nr22 = memRef->rom[NR22];
+    uBYTE nr23 = memRef->rom[NR23];
     uBYTE nr24 = memRef->rom[NR24];
 
     bool lengthEnabled = nr24 & 0b01000000;
@@ -369,8 +327,8 @@ uBYTE Apu::ComputeChannel2Amplitude() {
         ch2WaveDutyPointer = (ch2WaveDutyPointer + 1) % 8;
     }
 
-    // Finally, compute the channel's amplitude
-    uBYTE wavePattern = DetermineChannel2WavePattern();
+    // Fetch the raw wave pattern amplitude for channel 2
+    uBYTE wavePattern = determineChannelWavePattern(nr21);
     if (wavePattern & (1 << ch2WaveDutyPointer)) {
         ch2Amplitude = 127;
     }
@@ -379,72 +337,31 @@ uBYTE Apu::ComputeChannel2Amplitude() {
     }
 
     if (volumeEnvelopeTick) {
-
-        // If the period in NR22 is 0,
-        // nothing to do.
-        if (volumePeriod == 0) {
-            goto skip_volume_env_2;
-        }
-
-        if (ch2VolumeTimer > 0) {
-            ch2VolumeTimer--;
-        }
-
-        // Only proceed with the volume envelope
-        // if the decrement resulted in the period timer becoming 0
-        if (ch2VolumeTimer != 0) {
-            goto skip_volume_env_2;
-        }
-
-        // Reload the volume timer
-        ch2VolumeTimer = volumePeriod;
-
-        // Update the current volume
-        if (volumeDirection == INCREASING && ch2CurrentVolume < 0xF) {
-            ch2CurrentVolume++;
-        }
-
-        if (volumeDirection == DECREASING && ch2CurrentVolume > 0x0) {
-            ch2CurrentVolume--;
-        }
+        volumeEnvelopeFunction(ch2VolumeTimer, ch2CurrentVolume, volumePeriod, volumeDirection);
     }
-
-skip_volume_env_2:
 
     if (lengthControlTick && lengthEnabled) {
-        if (ch2LengthTimer > 0) {
-            ch2LengthTimer--;
-        }
-
-        if (ch2LengthTimer == 0) {
-            ch2Disabled = true;
-        }
+        lengthFunction(ch2LengthTimer, ch2Disabled);
     }
 
-    uBYTE volumeModifier;
-    if (ch2CurrentVolume == 0) {
-        volumeModifier = 127;
-    }
-    else if (ch2CurrentVolume == 0xF) {
-        volumeModifier = 0;
-    }
-    else if (ch2CurrentVolume > 0 && ch2CurrentVolume < 0xF) {
-        volumeModifier = 127 - ((127 / 0xF) * ch2CurrentVolume);
-    }
-    else {
-#ifdef FUUGB_DEBUG
-        fprintf(stderr, "[APU] invalid current volume modifier computed for channel 2.");
-#endif
-        exit(EXIT_FAILURE);
-    }
-
-    ch2Amplitude -= volumeModifier;
+    ch2Amplitude -= computeVolumeModifier(ch2CurrentVolume);
 
     if (ch2Disabled) {
         ch2Amplitude = 0;
     }
 
     return ch2Amplitude;
+}
+
+int Apu::DetermineChannel2FrequencyTimerValue() {
+    uBYTE hiByte = memRef->rom[NR24] & 0b00000111;
+    uBYTE loByte = memRef->rom[NR23];
+
+    int frequencyQuotient = (hiByte << 8) | loByte;
+
+    // These values were pulled from the gbdev pandocs
+    // https://gbdev.io/pandocs/Sound_Controller.html#ff19---nr24---channel-2-frequency-hi-data-rw
+    return (131072 / (2048 - frequencyQuotient));
 }
 
 void Apu::UpdateFrameSequencer(int cycles) {
@@ -487,23 +404,119 @@ void Apu::UpdateFrameSequencer(int cycles) {
     }
 }
 
-int Apu::DetermineChannel1Frequency(bool direction, uBYTE shiftAmount) {
-    int newFrequency = ch1ShadowFrequency >> shiftAmount;
+int determineChannelFrequency(bool direction, uBYTE shiftAmount, int shadowFrequency) {
+    int newFrequency = shadowFrequency >> shiftAmount;
 
     if (direction == INCREASING) {
-        newFrequency = ch1ShadowFrequency + newFrequency;
+        newFrequency = shadowFrequency + newFrequency;
     }
 
     if (direction == DECREASING) {
-        newFrequency = ch1ShadowFrequency - newFrequency;
+        newFrequency = shadowFrequency - newFrequency;
     }
 
     return newFrequency;
 }
 
-uBYTE Apu::DetermineChannel1WavePattern() {
-    // Wave duty identifier is found in bit 7-6 of NR11
-    uBYTE waveDuty = ((memRef->rom[NR11] & (0b11000000)) >> 6);
+void frequencySweepFunction(uBYTE& sweepTimer,
+    int& chFrequency,
+    int& chShadowFrequency,
+    bool& chDisabled,
+    bool sweepEnabled,
+    int sweepPeriod,
+    bool sweepDirection,
+    uBYTE sweepShift) {
+    if (sweepTimer > 0) {
+        sweepTimer--;
+    }
+
+    // Only proceed with the frequency sweep
+    // if and only if the sweep timer became 0
+    if (sweepTimer != 0) {
+        return;
+    }
+
+    // Reload the sweep timer with the period.
+    // If NR10 contained a 0 period, the timer 
+    // defaults to 8.
+    sweepTimer = sweepPeriod;
+    if (sweepTimer == 0) {
+        sweepTimer = 8;
+    }
+
+    if (sweepEnabled && sweepPeriod > 0) {
+        int newFrequency = determineChannelFrequency(sweepDirection, sweepShift, chShadowFrequency);
+
+        if (newFrequency < 2048 && sweepShift > 0) {
+            chFrequency = newFrequency;
+            chShadowFrequency = newFrequency;
+
+            // Recalculate the frequency, simply to detect if
+            // it overflows with these new shadow frequencies.
+            newFrequency = determineChannelFrequency(sweepDirection, sweepShift, chShadowFrequency);
+        }
+
+        if (newFrequency > 2047) {
+            chDisabled = true;
+        }
+    }
+}
+
+void volumeEnvelopeFunction(int& volumeTimer, uBYTE& currentVolume, uBYTE volumePeriod, bool envelopeDirection) {
+    // If the period is 0,
+    // nothing to do.
+    if (volumePeriod == 0) {
+        return;
+    }
+
+    if (volumeTimer > 0) {
+        volumeTimer--;
+    }
+
+    // Only proceed with the volume envelope
+    // if the decrement resulted in the period timer becoming 0
+    if (volumeTimer != 0) {
+        return;
+    }
+
+    // Reload the volume timer
+    volumeTimer = volumePeriod;
+
+    // Update the current volume
+    if (envelopeDirection == INCREASING && currentVolume < 0xF) {
+        currentVolume++;
+    }
+
+    if (envelopeDirection == DECREASING && currentVolume > 0x0) {
+        currentVolume--;
+    }
+}
+
+uBYTE computeVolumeModifier(uBYTE currentVolume) {
+    uBYTE volumeModifier = 127;
+    if (currentVolume == 0) {
+        volumeModifier = 127;
+    }
+    else if (currentVolume == 0xF) {
+        volumeModifier = 0;
+    }
+    else if (currentVolume > 0 && currentVolume < 0xF) {
+        volumeModifier = 127 - ((127 / 0xF) * currentVolume);
+    }
+    else {
+#ifdef FUUGB_DEBUG
+        fprintf(stderr, "[APU] invalid current volume modifier computed for channel 2: %d", volumeModifier);
+#endif
+        exit(EXIT_FAILURE);
+    }
+
+    return volumeModifier;
+}
+
+uBYTE determineChannelWavePattern(uBYTE nrx1) {
+    // Wave duty identifier is found in bit 7-6 of NRx1
+    // Only applies to channels 1 and 2
+    uBYTE waveDuty = ((nrx1 & (0b11000000)) >> 6);
     uBYTE wavePattern = 0;
 
     switch (waveDuty) {
@@ -513,10 +526,20 @@ uBYTE Apu::DetermineChannel1WavePattern() {
     case 3: wavePattern = DUTY4; break;
     default:
 #ifdef FUUGB_DEBUG
-        fprintf(stderr, "[APU] invalid wave duty id was calculated when determining channel 1 wave pattern: %d\n", waveDuty);
+        fprintf(stderr, "[APU] invalid wave duty id was calculated when determining channel 2 wave pattern: %d\n", waveDuty);
 #endif
         exit(EXIT_FAILURE);
     }
 
     return wavePattern;
+}
+
+void lengthFunction(uBYTE& lengthTimer, bool& chDisabled) {
+    if (lengthTimer > 0) {
+        lengthTimer--;
+    }
+
+    if (lengthTimer == 0) {
+        chDisabled = true;
+    }
 }

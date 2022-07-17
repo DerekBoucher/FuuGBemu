@@ -5,6 +5,9 @@
 #include <pulse/error.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <mutex>
+#include <thread>
+#include <condition_variable>
 
 #include "Memory.hpp"
 
@@ -63,47 +66,51 @@ public:
 
     void UpdateSoundRegisters(int cycles);
 private:
+    void FlusherRoutine();
+    void NotifyFlusher();
     void FlushBuffer();
     void UpdateFrameSequencer(int cycles);
 
     int DetermineChannel2FrequencyTimerValue();
-    int DetermineChannel1Frequency(bool direction, uBYTE shiftAmount);
 
     uBYTE ComputeChannel1Ampltiude();
     uBYTE ComputeChannel2Amplitude();
-    uBYTE DetermineChannel1WavePattern();
-    uBYTE DetermineChannel2WavePattern();
+
+    bool flusherRunning;
 
     Memory* memRef;
+    std::unique_ptr<std::thread> apuFlusher;
+    std::mutex loopMtx;
+    std::condition_variable loopCv;
 
-    uBYTE ch2WaveDutyPointer;
     uBYTE buffer[BUFFER];
 
     int addToBufferTimer;
-    int ch2FrequencyTimer;
     int currentSampleBufferPosition;
     int frameSequencerTimer;
     int frameSequencerStep;
+
     int ch1ShadowFrequency;
     int ch1Frequency;
-
-    uBYTE ch1VolumeTimer;
+    int ch1FrequencyTimer;
+    int ch1VolumeTimer;
     uBYTE ch1CurrentVolume;
     uBYTE ch1SweepTimer;
-
     uBYTE ch1LengthTimer;
+    uBYTE ch1WaveDutyPointer;
+    bool ch1Disabled;
 
-    int ch1FrequencyTimer;
-    int ch2LengthTimer;
+
+    int ch2VolumeTimer;
+    int ch2FrequencyTimer;
+    uBYTE ch2LengthTimer;
+    uBYTE ch2WaveDutyPointer;
+    uBYTE ch2CurrentVolume;
     bool ch2Disabled;
 
     bool lengthControlTick;
     bool volumeEnvelopeTick;
     bool sweepTick;
-    bool ch1Disabled;
-
-    uBYTE ch2CurrentVolume;
-    int ch2VolumeTimer;
 
 #ifdef FUUGB_SYSTEM_LINUX
     pa_simple* audioClient;

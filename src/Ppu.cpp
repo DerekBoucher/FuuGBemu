@@ -68,7 +68,6 @@ void Ppu::UnBindContext() {
 void Ppu::Render() {
     DrawPixels();
     glFlush();
-    glfwSwapBuffers(window);
 }
 
 void Ppu::AttachShaders(Shader& vs, Shader& fs) {

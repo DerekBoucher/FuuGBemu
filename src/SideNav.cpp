@@ -96,15 +96,29 @@ void SideNav::renderDebuggerWindow() {
 }
 
 void SideNav::renderMemoryPane() {
+    if (ImGui::CollapsingHeader("Cartridge ROM")) {
+        memoryEditor.DrawContents(gbRef->memory.cartridge, sizeof(gbRef->memory.cartridge));
+    }
     if (ImGui::CollapsingHeader("Video RAM")) {
         memoryEditor.DrawContents(gbRef->memory.rom, 0x2000, 0x8000);
     }
-    if (ImGui::CollapsingHeader("Cartridge ROM 0")) {
-        memoryEditor.DrawContents(gbRef->memory.cartridge, 0x4000);
+    if (ImGui::CollapsingHeader("Work RAM 0")) {
+        memoryEditor.DrawContents(gbRef->memory.rom, 0x1000, 0xC000);
     }
-    if (ImGui::CollapsingHeader("Cartridge ROM n")) {
-        ImGui::Text("Currently mapped ROM bank: %d", gbRef->memory.currentRomBank);
-        memoryEditor.DrawContents(gbRef->memory.cartridge, 0x4000, 0x4000 + (gbRef->memory.currentRomBank * 0x4000));
+    if (ImGui::CollapsingHeader("Work RAM 1")) {
+        memoryEditor.DrawContents(gbRef->memory.rom, 0x1000, 0xD000);
+    }
+    if (ImGui::CollapsingHeader("Sprite Attribute Table")) {
+        memoryEditor.DrawContents(gbRef->memory.rom, 0x100, 0xFE00);
+    }
+    if (ImGui::CollapsingHeader("I/O Registers")) {
+        memoryEditor.DrawContents(gbRef->memory.rom, 0x80, 0xFF00);
+    }
+    if (ImGui::CollapsingHeader("High RAM")) {
+        memoryEditor.DrawContents(gbRef->memory.rom, 0x7F, 0xFF80);
+    }
+    if (ImGui::CollapsingHeader("Interrupt Enable Register")) {
+        memoryEditor.DrawContents(gbRef->memory.rom, 0x1, 0xFFFF);
     }
 }
 

@@ -39,6 +39,7 @@ private:
     };
 
     debuggerTab selection = MEMORY;
+    bool selectedListBox[3] = { true, false, false };
 };
 
 #endif

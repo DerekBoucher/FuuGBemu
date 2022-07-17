@@ -4,6 +4,7 @@ const ImVec4 tabSelectedColor = ImVec4(83.0f, 132.0f, 193.0f, 255.0f);
 
 SideNav::SideNav(Gameboy* gbRef) {
     this->gbRef = gbRef;
+
 }
 
 SideNav::~SideNav() {}
@@ -95,7 +96,16 @@ void SideNav::renderDebuggerWindow() {
 }
 
 void SideNav::renderMemoryPane() {
-    memoryEditor.DrawContents(gbRef->memory.rom, sizeof(gbRef->memory.rom));
+    if (ImGui::CollapsingHeader("Video RAM")) {
+        memoryEditor.DrawContents(gbRef->memory.rom, 0x2000, 0x8000);
+    }
+    if (ImGui::CollapsingHeader("Cartridge ROM 0")) {
+        memoryEditor.DrawContents(gbRef->memory.cartridge, 0x4000);
+    }
+    if (ImGui::CollapsingHeader("Cartridge ROM n")) {
+        ImGui::Text("Currently mapped ROM bank: %d", gbRef->memory.currentRomBank);
+        memoryEditor.DrawContents(gbRef->memory.cartridge, 0x4000, 0x4000 + (gbRef->memory.currentRomBank * 0x4000));
+    }
 }
 
 void SideNav::renderVideoPane() {

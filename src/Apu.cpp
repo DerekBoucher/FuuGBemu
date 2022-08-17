@@ -340,6 +340,10 @@ uBYTE Apu::ComputeChannel2Amplitude() {
         volumeEnvelopeFunction(ch2VolumeTimer, ch2CurrentVolume, volumePeriod, volumeDirection);
     }
 
+    if (memRef->RequiresCh1LengthReload()) {
+        lengthData = nr21 & 0b00111111;
+    }
+
     if (lengthControlTick && lengthEnabled) {
         lengthFunction(ch2LengthTimer, ch2Disabled);
     }

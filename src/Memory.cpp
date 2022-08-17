@@ -435,6 +435,7 @@ void Memory::Write(uWORD addr, uBYTE data)
         else if (addr == 0xFF10) // Channel 1 Sweep Register
         {
             rom[addr] = data;
+            reloadCh1LengthTimer = true;
         }
         else if (addr == 0xFF11) // Channel 1 Sound length/wave pattern duty Register
         {
@@ -455,6 +456,7 @@ void Memory::Write(uWORD addr, uBYTE data)
         else if (addr == 0xFF16) // Channel 2 Sound length/wave pattern duty Register
         {
             rom[addr] = data;
+            reloadCh2LengthTimer = true;
         }
         else if (addr == 0xFF17) // Channel 2 Volume Envelope Register
         {
@@ -475,6 +477,7 @@ void Memory::Write(uWORD addr, uBYTE data)
         else if (addr == 0xFF1B) // Channel 3 Sound Length Register
         {
             rom[addr] = data;
+            reloadCh3LengthTimer = true;
         }
         else if (addr == 0xFF1C) // Channel 3 Select Output Level Register
         {
@@ -491,6 +494,7 @@ void Memory::Write(uWORD addr, uBYTE data)
         else if (addr == 0xFF20) // Channel 4 Sound length/wave pattern duty Register
         {
             rom[addr] = data;
+            reloadCh4LengthTimer = true;
         }
         else if (addr == 0xFF21) // Channel 4 Volume Envelope Register
         {
@@ -993,4 +997,40 @@ void Memory::handleJoypadTranslation(uBYTE data) {
         result = data | ((joypadBuffer & 0xF0) >> 4);
         rom[JOYPAD_INPUT_REG] = result;
     }
+}
+
+bool Memory::RequiresCh1LengthReload() {
+    if (reloadCh1LengthTimer) {
+        reloadCh1LengthTimer = false;
+        return true;
+    }
+
+    return reloadCh1LengthTimer;
+}
+
+bool Memory::RequiresCh2LengthReload() {
+    if (reloadCh2LengthTimer) {
+        reloadCh2LengthTimer = false;
+        return true;
+    }
+
+    return reloadCh2LengthTimer;
+}
+
+bool Memory::RequiresCh3LengthReload() {
+    if (reloadCh3LengthTimer) {
+        reloadCh3LengthTimer = false;
+        return true;
+    }
+
+    return reloadCh3LengthTimer;
+}
+
+bool Memory::RequiresCh4LengthReload() {
+    if (reloadCh4LengthTimer) {
+        reloadCh4LengthTimer = false;
+        return true;
+    }
+
+    return reloadCh4LengthTimer;
 }

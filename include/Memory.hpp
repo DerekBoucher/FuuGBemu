@@ -58,6 +58,11 @@ public:
     uBYTE DmaRead(uWORD);
     void SetPostBootRomState();
 
+    bool RequiresCh1LengthReload();
+    bool RequiresCh2LengthReload();
+    bool RequiresCh3LengthReload();
+    bool RequiresCh4LengthReload();
+
 private:
     void changeRomBank(uWORD, uBYTE);
     void changeRamBank(uBYTE);
@@ -73,6 +78,12 @@ private:
     bool bootRomClosed;
     bool dmaTransferInProgress;
     uWORD translatedAddr;
+
+    // APU flags
+    bool reloadCh1LengthTimer = false;
+    bool reloadCh2LengthTimer = false;
+    bool reloadCh3LengthTimer = false;
+    bool reloadCh4LengthTimer = false;
 
     enum CartAttributes {
         ramEnabled,

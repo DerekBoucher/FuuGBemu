@@ -55,6 +55,13 @@ void SideNav::renderEmulatorControlsWindow() {
         pauseLabelIdx = (pauseLabelIdx + 1) % 2;
     }
 
+    ImGui::Text("PC: %04X", gbRef->cpu.PC);
+    ImGui::Text("SP: %04X", gbRef->cpu.SP);
+    ImGui::Text("A: %02X", gbRef->cpu.AF.hi); ImGui::SameLine(); ImGui::Text("F: %02X", gbRef->cpu.AF.lo);
+    ImGui::Text("B: %02X", gbRef->cpu.BC.hi); ImGui::SameLine(); ImGui::Text("C: %02X", gbRef->cpu.BC.lo);
+    ImGui::Text("D: %02X", gbRef->cpu.DE.hi); ImGui::SameLine(); ImGui::Text("E: %02X", gbRef->cpu.DE.lo);
+    ImGui::Text("H: %02X", gbRef->cpu.HL.hi); ImGui::SameLine(); ImGui::Text("L: %02X", gbRef->cpu.HL.lo);
+
     ImGui::End();
 }
 

@@ -300,7 +300,7 @@ uBYTE Apu::ComputeChannel2Amplitude() {
 
     bool lengthEnabled = nr24 & 0b01000000;
     bool volumeDirection = nr22 & 0b00001000;
-    uBYTE lengthData = nr21 & 0b00111111;
+    uBYTE lengthPeriod = nr21 & 0b00111111;
     uBYTE volumePeriod = (nr22 & 0b00000111);
     uBYTE initialVolume = (nr22 & 0b11110000) >> 4;
 
@@ -308,7 +308,11 @@ uBYTE Apu::ComputeChannel2Amplitude() {
         memRef->rom[NR24] = nr24 & ~(1 << 7);
 
         ch2Disabled = false;
-        ch2LengthTimer = 64 - lengthData;
+
+        if (ch2LengthTimer == 0)
+            ch2LengthTimer = 64;
+
+        ch2FrequencyTimer = DetermineChannel2FrequencyTimerValue();
         ch2VolumeTimer = volumePeriod;
         ch2CurrentVolume = initialVolume;
     }
@@ -341,7 +345,7 @@ uBYTE Apu::ComputeChannel2Amplitude() {
     }
 
     if (memRef->RequiresCh1LengthReload()) {
-        lengthData = nr21 & 0b00111111;
+        ch2LengthTimer = 64 - lengthPeriod;
     }
 
     if (lengthControlTick && lengthEnabled) {

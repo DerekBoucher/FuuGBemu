@@ -8,6 +8,13 @@ All credit goes to codeslinger!
 
 <img src="images/DrMario.png" width=30% height=30%> <img src="images/Tetris.png" width=30% height=30%> <img src="images/Zelda.png" width=30% height=30%>
 
+## Cloning
+
+This repo relies on imgui submodules:
+```
+git clone --recurse-submodules
+```
+
 ## How To Build
     MAC OS X
         (not supported yet)

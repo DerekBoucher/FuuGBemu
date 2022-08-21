@@ -11,8 +11,6 @@
 
 #include "Memory.hpp"
 
-#define BUFFER 1024
-
 #define NR10 0xFF10 // Channel 1 Sweep Register
 #define NR11 0xFF11 // Channel 1 Sound length/Wave Pattern duty
 #define NR12 0xFF12 // Channel 1 Volume Envelope
@@ -71,10 +69,13 @@ private:
     void FlushBuffer();
     void UpdateFrameSequencer(int cycles);
 
+    int DetermineChannel1FrequencyTimerValue();
     int DetermineChannel2FrequencyTimerValue();
 
     uBYTE ComputeChannel1Ampltiude();
     uBYTE ComputeChannel2Amplitude();
+
+    const static int BUFFER_SIZE = APU_SAMPLE_RATE;
 
     bool flusherRunning;
 
@@ -83,7 +84,7 @@ private:
     std::mutex loopMtx;
     std::condition_variable loopCv;
 
-    uBYTE buffer[BUFFER];
+    uBYTE buffer[BUFFER_SIZE];
 
     int addToBufferTimer;
     int currentSampleBufferPosition;

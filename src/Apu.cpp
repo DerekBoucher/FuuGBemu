@@ -28,7 +28,7 @@ Apu::Apu(Memory* memRef) {
         "FuuGBEmuAPU",
         PA_STREAM_PLAYBACK,
         NULL,
-        "test",
+        "FuuGBEmuAPU",
         &samplingSpec,
         NULL,
         NULL,
@@ -89,7 +89,7 @@ void Apu::NotifyFlusher() {
 void Apu::FlushBuffer() {
     int errorCode = 0;
 
-    pa_simple_write(audioClient, buffer, BUFFER, &errorCode);
+    pa_simple_write(audioClient, buffer, BUFFER_SIZE, &errorCode);
     if (errorCode) {
 #ifdef FUUGB_DEBUG
         fprintf(stderr, "error playing back audio: %s\n", pa_strerror(errorCode));
@@ -107,6 +107,8 @@ void Apu::FlushBuffer() {
 }
 
 void Apu::UpdateSoundRegisters(int cycles) {
+    uBYTE nr52 = memRef->rom[NR52];
+
     UpdateFrameSequencer(cycles);
 
     // First, check if it is time to add a sample to the
@@ -121,15 +123,14 @@ void Apu::UpdateSoundRegisters(int cycles) {
     // Here we add addToBufferTimer's cycles that might've resulted in a negative value
     addToBufferTimer = (CPU_FREQUENCY / APU_SAMPLE_RATE) + addToBufferTimer;
 
-    // Channel 2
+    uBYTE ch1Amplitude = ComputeChannel1Ampltiude();
     uBYTE ch2Amplitude = ComputeChannel2Amplitude();
 
     // Mix the amplitudes of all channels
-    uBYTE sample = 128 + ((ch2Amplitude) / 4);
+    uBYTE sample = ch2Amplitude;
 
     uBYTE nr50 = memRef->rom[NR50];
     uBYTE nr51 = memRef->rom[NR51];
-    uBYTE nr52 = memRef->rom[NR52];
 
     // If we are currently working with the right
     // stereo sample, modulo 2 returns 1
@@ -177,14 +178,14 @@ void Apu::UpdateSoundRegisters(int cycles) {
         exit(EXIT_FAILURE);
     }
 
-    sample = sample - volume;
+    sample -= volume;
 
     // TODO: Determine what to do with NR52 bits 0-3
 
-    // Finally, stuff the sample in the buffer,
-    // and play the sound if the buffer 0b11111100is full
+        // Stuff the current sample in the buffer,
+    // and play the sound if the buffer is full
     buffer[currentSampleBufferPosition++] = sample;
-    if (currentSampleBufferPosition >= BUFFER) {
+    if (currentSampleBufferPosition >= BUFFER_SIZE) {
         currentSampleBufferPosition = 0;
 
         // If bit 7 of NR52 is reset, this means that the volume
@@ -228,20 +229,28 @@ uBYTE Apu::ComputeChannel1Ampltiude() {
     //  - If the sweep period OR the sweep shift amount are non-zero, then frequency sweeping is enabled
     //  - If the sweep shift is non-zero, recalculate the new frequency value to check if there's a resulting overflow
     //  - If there is an overflow, disable the channel
-    //  - The length timer is reloaded with 64 - lengthPeriod, if it was 0
+    //  - The length timer is reloaded with 64, if it was 0
     if (nr14 & (1 << 7)) {
+        memRef->rom[NR14] = nr14 & ~(1 << 7);
+
         ch1Disabled = false;
+
+        if (ch1LengthTimer == 0)
+            ch1LengthTimer = 64;
+
+        ch1FrequencyTimer = DetermineChannel1FrequencyTimerValue();
         ch1VolumeTimer = volumePeriod;
         ch1CurrentVolume = initialVolume;
         ch1ShadowFrequency = ch1Frequency;
         ch1SweepTimer = sweepPeriod;
-        if (ch1SweepTimer == 0) {
-            ch1SweepTimer = 8;
-        }
 
-        if (sweepPeriod > 0 || sweepShift > 0) {
+        if (ch1SweepTimer == 0)
+            ch1SweepTimer = 8;
+
+        if (sweepPeriod > 0 || sweepShift > 0)
             sweepEnabled = true;
-        }
+        else
+            sweepEnabled = false;
 
         if (sweepShift > 0) {
             int newFrequency = determineChannelFrequency(sweepDirection, sweepShift, ch1ShadowFrequency);
@@ -249,10 +258,6 @@ uBYTE Apu::ComputeChannel1Ampltiude() {
             if (newFrequency > 2047) {
                 ch1Disabled = true;
             }
-        }
-
-        if (ch1LengthTimer == 0) {
-            ch1LengthTimer = 64 - lengthPeriod;
         }
     }
 
@@ -281,6 +286,10 @@ uBYTE Apu::ComputeChannel1Ampltiude() {
             sweepPeriod,
             sweepDirection,
             sweepShift);
+    }
+
+    if (memRef->RequiresCh2LengthReload()) {
+        ch2LengthTimer = 64 - lengthPeriod;
     }
 
     if (lengthControlTick && lengthEnabled) {
@@ -334,7 +343,7 @@ uBYTE Apu::ComputeChannel2Amplitude() {
     // Fetch the raw wave pattern amplitude for channel 2
     uBYTE wavePattern = determineChannelWavePattern(nr21);
     if (wavePattern & (1 << ch2WaveDutyPointer)) {
-        ch2Amplitude = 127;
+        ch2Amplitude = 128;
     }
     else {
         ch2Amplitude = 0;
@@ -359,6 +368,17 @@ uBYTE Apu::ComputeChannel2Amplitude() {
     }
 
     return ch2Amplitude;
+}
+
+int Apu::DetermineChannel1FrequencyTimerValue() {
+    uBYTE hiByte = memRef->rom[NR14] & 0b00000111;
+    uBYTE loByte = memRef->rom[NR13];
+
+    int frequencyQuotient = (hiByte << 8) | loByte;
+
+    // These values were pulled from the gbdev pandocs
+    // https://gbdev.io/pandocs/Sound_Controller.html#ff19---nr24---channel-2-frequency-hi-data-rw
+    return (131072 / (2048 - frequencyQuotient));
 }
 
 int Apu::DetermineChannel2FrequencyTimerValue() {
@@ -501,15 +521,15 @@ void volumeEnvelopeFunction(int& volumeTimer, uBYTE& currentVolume, uBYTE volume
 }
 
 uBYTE computeVolumeModifier(uBYTE currentVolume) {
-    uBYTE volumeModifier = 127;
+    uBYTE volumeModifier = 128;
     if (currentVolume == 0) {
-        volumeModifier = 127;
+        volumeModifier = 128;
     }
     else if (currentVolume == 0xF) {
         volumeModifier = 0;
     }
     else if (currentVolume > 0 && currentVolume < 0xF) {
-        volumeModifier = 127 - ((127 / 0xF) * currentVolume);
+        volumeModifier = 128 - ((128 / 0xF) * currentVolume);
     }
     else {
 #ifdef FUUGB_DEBUG

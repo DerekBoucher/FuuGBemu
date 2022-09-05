@@ -113,7 +113,7 @@ int main(int argc, char** argv) {
 
     // Use OpenGL 3.3 Core profile
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
@@ -171,21 +171,22 @@ int main(int argc, char** argv) {
     // Set keyboard handler
     glfwSetKeyCallback(window, keyboardHandler);
 
-    // Create a gameboy instance, then start it.
+    // Start gameboy
     gameboy->Start();
 
+    // Main program loop
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
         if (gameboy->RequiresRender()) {
             gameboy->Render();
+            glfwSwapBuffers(window);
         }
 
         sideNav.Render();
-
-        glfwSwapBuffers(window);
     }
 
+    // Clean up
     gameboy->Stop();
     delete gameboy;
     sideNav.Shutdown();

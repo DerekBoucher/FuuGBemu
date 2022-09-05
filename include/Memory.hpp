@@ -63,6 +63,11 @@ public:
     bool RequiresCh3LengthReload();
     bool RequiresCh4LengthReload();
 
+    bool TriggerEventCh1();
+    bool TriggerEventCh2();
+    bool TriggerEventCh3();
+    bool TriggerEventCh4();
+
 private:
     void changeRomBank(uWORD, uBYTE);
     void changeRamBank(uBYTE);
@@ -84,6 +89,10 @@ private:
     bool reloadCh2LengthTimer = false;
     bool reloadCh3LengthTimer = false;
     bool reloadCh4LengthTimer = false;
+    bool triggerEventCh1 = false;
+    bool triggerEventCh2 = false;
+    bool triggerEventCh3 = false;
+    bool triggerEventCh4 = false;
 
     enum CartAttributes {
         ramEnabled,

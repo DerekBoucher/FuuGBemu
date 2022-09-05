@@ -452,6 +452,12 @@ void Memory::Write(uWORD addr, uBYTE data)
         else if (addr == 0xFF14) // Channel 1 Freqency hi Register
         {
             rom[addr] = data;
+
+            // Writing a byte with bit 7 set causes a
+            // trigger event for channel 1 in the APU
+            if (data & (1 << 7)) {
+                triggerEventCh1 = true;
+            }
         }
         else if (addr == 0xFF16) // Channel 2 Sound length/wave pattern duty Register
         {
@@ -469,6 +475,12 @@ void Memory::Write(uWORD addr, uBYTE data)
         else if (addr == 0xFF19) // Channel 2 Freqency hi Register
         {
             rom[addr] = data;
+
+            // Writing a byte with bit 7 set causes a
+            // trigger event for channel 2 in the APU
+            if (data & (1 << 7)) {
+                triggerEventCh2 = true;
+            }
         }
         else if (addr == 0xFF1A) // Channel 3 Sound On/Off Register
         {
@@ -490,6 +502,12 @@ void Memory::Write(uWORD addr, uBYTE data)
         else if (addr == 0xFF1E) // Channel 3 Frequency hi Register
         {
             rom[addr] = data;
+
+            // Writing a byte with bit 7 set causes a
+            // trigger event for channel 1 in the APU
+            if (data & (1 << 7)) {
+                triggerEventCh3 = true;
+            }
         }
         else if (addr == 0xFF20) // Channel 4 Sound length/wave pattern duty Register
         {
@@ -507,6 +525,12 @@ void Memory::Write(uWORD addr, uBYTE data)
         else if (addr == 0xFF23) // Channel 4 Counter/Consecutive Register
         {
             rom[addr] = data;
+
+            // Writing a byte with bit 7 set causes a
+            // trigger event for channel 1 in the APU
+            if (data & (1 << 7)) {
+                triggerEventCh4 = true;
+            }
         }
         else if (addr == 0xFF24) // Channel Control Register
         {
@@ -1033,4 +1057,40 @@ bool Memory::RequiresCh4LengthReload() {
     }
 
     return reloadCh4LengthTimer;
+}
+
+bool Memory::TriggerEventCh1() {
+    if (triggerEventCh1) {
+        triggerEventCh1 = false;
+        return true;
+    }
+
+    return false;
+}
+
+bool Memory::TriggerEventCh2() {
+    if (triggerEventCh2) {
+        triggerEventCh2 = false;
+        return true;
+    }
+
+    return false;
+}
+
+bool Memory::TriggerEventCh3() {
+    if (triggerEventCh3) {
+        triggerEventCh3 = false;
+        return true;
+    }
+
+    return false;
+}
+
+bool Memory::TriggerEventCh4() {
+    if (triggerEventCh4) {
+        triggerEventCh4 = false;
+        return true;
+    }
+
+    return false;
 }

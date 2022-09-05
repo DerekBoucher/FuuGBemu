@@ -18,13 +18,8 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ],
+            "miDebuggerArgs": "-exec -enable-pretty-printing",
+            "setupCommands": [],
             "miDebuggerPath": "/usr/bin/gdb"
         },
         {
@@ -41,13 +36,8 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ],
+            "miDebuggerArgs": "-exec -enable-pretty-printing",
+            "setupCommands": [],
             "miDebuggerPath": "/usr/bin/gdb"
         },
         {

@@ -1,6 +1,6 @@
 #include "Gameboy.hpp"
 
-const int CyclesPerFrame = 69905;
+const int CyclesPerFrame = CPU_FREQUENCY_HZ / 60;
 const double singleFramePeriod = 1.0 / 60.0;
 
 Gameboy::Gameboy() {}
@@ -120,9 +120,9 @@ void Gameboy::Run() {
         // to have the gameboy run too quickly.
         // (This caps the emulation at ~60FPS)
         double currentTime = glfwGetTime();
-        while (currentTime - lastFrameTimeStamp < singleFramePeriod) {
+        while (currentTime - lastFrameTimeStamp < singleFramePeriod)
             currentTime = glfwGetTime();
-        }
+
         lastFrameTimeStamp = glfwGetTime();
 
         // Ask the main thread to perform the rendering

@@ -40,18 +40,19 @@
 #define DUTY1 0b00000001 // 12.5% duty cycle
 #define DUTY2 0b00000011 // 25% duty cycle
 #define DUTY3 0b00001111 // 50% duty cycle
-#define DUTY4 0b11111100 // 75% duty cycle
+#define DUTY4 0b00111111 // 75% duty cycle
 
-#define FRAME_SEQUENCER_CYCLES 8192
-#define CH2_FREQUENCY_CYCLES 2048
-#define CH1_SWEEP_CYCLES 2048
-#define MAX_FREQUENCY 2048
+#define SQUARE_WAVE_MAX_FREQUENCY_HZ 2048
+#define FRAME_SEQUENCER_FREQUENCY_HZ 512
+#define AUDIO_SAMPLING_FREQUENCY_HZ 48000
+#define CPU_FREQUENCY_HZ 4194304
+
+#define AUDIO_BUFFER_SIZE 1024
 
 #define FRAME_SEQUENCE_VOLUME_CLOCK 7
 #define FRAME_SEQUENCE_SWEEP_CLOCK_2 2
 #define FRAME_SEQUENCE_SWEEP_CLOCK_6 6
-#define CPU_FREQUENCY 4194304
-#define APU_SAMPLE_RATE 48000
+
 #define INCREASING true
 #define DECREASING false
 
@@ -68,29 +69,32 @@ private:
     void NotifyFlusher();
     void FlushBuffer();
     void UpdateFrameSequencer(int cycles);
-
-    int DetermineChannel1FrequencyTimerValue();
-    int DetermineChannel2FrequencyTimerValue();
-
     uBYTE ComputeChannel1Ampltiude();
-    uBYTE ComputeChannel2Amplitude();
-
-    const static int BUFFER_SIZE = APU_SAMPLE_RATE;
-
-    bool flusherRunning;
+    uBYTE ComputeChannel2Amplitude(int cycles);
 
     Memory* memRef;
+
+    // Audio buffer flusher thread routine
+    bool flusherRunning;
     std::unique_ptr<std::thread> apuFlusher;
     std::mutex loopMtx;
     std::condition_variable loopCv;
 
-    uBYTE buffer[BUFFER_SIZE];
-
-    int addToBufferTimer;
+    // Audio sample buffer variables
+    std::mutex bufferLock;
+    uBYTE audioBuffer[AUDIO_BUFFER_SIZE];
     int currentSampleBufferPosition;
+    int addToBufferTimer;
+
+    // Frame sequencer variables
     int frameSequencerTimer;
     int frameSequencerStep;
+    bool lengthControlTick;
+    bool volumeEnvelopeTick;
+    bool sweepTick;
 
+    // Square Channel 1 variables
+    bool ch1Disabled;
     int ch1ShadowFrequency;
     int ch1Frequency;
     int ch1FrequencyTimer;
@@ -99,19 +103,14 @@ private:
     uBYTE ch1SweepTimer;
     uBYTE ch1LengthTimer;
     uBYTE ch1WaveDutyPointer;
-    bool ch1Disabled;
 
-
+    // Square Channel 2 variables
+    bool ch2Disabled;
     int ch2VolumeTimer;
     int ch2FrequencyTimer;
     uBYTE ch2LengthTimer;
     uBYTE ch2WaveDutyPointer;
     uBYTE ch2CurrentVolume;
-    bool ch2Disabled;
-
-    bool lengthControlTick;
-    bool volumeEnvelopeTick;
-    bool sweepTick;
 
 #ifdef FUUGB_SYSTEM_LINUX
     pa_simple* audioClient;

@@ -4,7 +4,6 @@ const ImVec4 tabSelectedColor = ImVec4(83.0f, 132.0f, 193.0f, 255.0f);
 
 SideNav::SideNav(Gameboy* gbRef) {
     this->gbRef = gbRef;
-
 }
 
 SideNav::~SideNav() {}
@@ -17,10 +16,11 @@ bool SideNav::Init(GLFWwindow* windowRef) {
 
     // Global Styling
     ImGui::StyleColorsLight();
-    // ImGuiStyle& style = ImGui::GetStyle();
     initResult = ImGui_ImplGlfw_InitForOpenGL(windowRef, true);
+    if (!initResult) {
+        return initResult;
+    }
     initResult = ImGui_ImplOpenGL3_Init("#version 330");
-
     return initResult;
 }
 

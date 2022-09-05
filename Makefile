@@ -32,7 +32,7 @@ OBJECTS = $(filter %.o, $(CPP_SOURCES:$(SRC_PATH)/%.cpp=$(BUILD_PATH)/%.o) \
 
 debug: makeDirs
 	@echo "Building debug x86_64..."
-	@$(eval export DEBUG_FLAGS =-g -DFUUGB_DEBUG)
+	@$(eval export DEBUG_FLAGS =-g3 -DFUUGB_DEBUG)
 	@$(MAKE) $(BIN_PATH)/$(BIN_NAME)
 
 release: makeDirs

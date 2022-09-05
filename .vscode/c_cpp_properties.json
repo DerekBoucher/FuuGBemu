@@ -14,7 +14,7 @@
                 "__WXGTK__",
                 "_FILE_OFFSET_BITS=64"
             ],
-            "compilerPath": "/usr/bin/gcc",
+            "compilerPath": "/usr/bin/g++",
             "cStandard": "gnu17",
             "cppStandard": "gnu++17",
             "intelliSenseMode": "linux-gcc-x64",

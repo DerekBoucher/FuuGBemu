@@ -6,7 +6,9 @@
 #include <fstream>
 #include <csignal>
 
+#include "SideNav.hpp"
 #include "Gameboy.hpp"
+#include "Apu.hpp"
 
 #define NATIVE_SIZE_X 160
 #define NATIVE_SIZE_Y 144
@@ -16,6 +18,8 @@ GLFWwindow* window;
 Gameboy* gameboy;
 
 bool skipBootRom = false;
+bool imguiActive = true;
+bool imguiDisable = false;
 std::string romPath = "";
 
 #ifdef FUUGB_DEBUG
@@ -109,12 +113,12 @@ int main(int argc, char** argv) {
 
     // Use OpenGL 3.3 Core profile
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    //glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
     // Create window
-    window = glfwCreateWindow(NATIVE_SIZE_X * SCALE,
+    window = glfwCreateWindow((NATIVE_SIZE_X * SCALE) + IMGUI_SIZE_X,
         NATIVE_SIZE_Y * SCALE,
         "FuuGBemu",
         NULL,
@@ -147,6 +151,10 @@ int main(int argc, char** argv) {
     // Create a gameboy instance
     gameboy = new Gameboy((uBYTE*)romData, window);
 
+    SideNav sideNav = SideNav(gameboy);
+    if (!sideNav.Init(window))
+        return EXIT_FAILURE;
+
     // If the user wants to skip boot rom, set the state on the gameboy
     if (skipBootRom) {
         gameboy->SkipBootRom();
@@ -160,26 +168,29 @@ int main(int argc, char** argv) {
     glClear(GL_COLOR_BUFFER_BIT);
     glfwSwapBuffers(window);
 
-    // Before we start the gameboy, unbind the context from the
-    // main thread. The gameboy thread will handle it from here
-    glfwMakeContextCurrent(NULL);
-
     // Set keyboard handler
     glfwSetKeyCallback(window, keyboardHandler);
 
-    // Create a gameboy instance, then start it.
+    // Start gameboy
     gameboy->Start();
 
-    // Here all we want the main thread to do
-    // is handle window events.
-    // The gameboy will handle swapping of buffers
+    // Main program loop
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
+
+        if (gameboy->RequiresRender()) {
+            gameboy->Render();
+            glfwSwapBuffers(window);
+        }
+
+        sideNav.Render();
     }
 
+    // Clean up
     gameboy->Stop();
-
     delete gameboy;
+    sideNav.Shutdown();
+    glfwDestroyWindow(window);
     glfwTerminate();
 
     return EXIT_SUCCESS;

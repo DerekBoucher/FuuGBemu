@@ -435,6 +435,7 @@ void Memory::Write(uWORD addr, uBYTE data)
         else if (addr == 0xFF10) // Channel 1 Sweep Register
         {
             rom[addr] = data;
+            reloadCh1LengthTimer = true;
         }
         else if (addr == 0xFF11) // Channel 1 Sound length/wave pattern duty Register
         {
@@ -451,10 +452,17 @@ void Memory::Write(uWORD addr, uBYTE data)
         else if (addr == 0xFF14) // Channel 1 Freqency hi Register
         {
             rom[addr] = data;
+
+            // Writing a byte with bit 7 set causes a
+            // trigger event for channel 1 in the APU
+            if (data & (1 << 7)) {
+                triggerEventCh1 = true;
+            }
         }
         else if (addr == 0xFF16) // Channel 2 Sound length/wave pattern duty Register
         {
             rom[addr] = data;
+            reloadCh2LengthTimer = true;
         }
         else if (addr == 0xFF17) // Channel 2 Volume Envelope Register
         {
@@ -467,6 +475,12 @@ void Memory::Write(uWORD addr, uBYTE data)
         else if (addr == 0xFF19) // Channel 2 Freqency hi Register
         {
             rom[addr] = data;
+
+            // Writing a byte with bit 7 set causes a
+            // trigger event for channel 2 in the APU
+            if (data & (1 << 7)) {
+                triggerEventCh2 = true;
+            }
         }
         else if (addr == 0xFF1A) // Channel 3 Sound On/Off Register
         {
@@ -475,6 +489,7 @@ void Memory::Write(uWORD addr, uBYTE data)
         else if (addr == 0xFF1B) // Channel 3 Sound Length Register
         {
             rom[addr] = data;
+            reloadCh3LengthTimer = true;
         }
         else if (addr == 0xFF1C) // Channel 3 Select Output Level Register
         {
@@ -487,10 +502,17 @@ void Memory::Write(uWORD addr, uBYTE data)
         else if (addr == 0xFF1E) // Channel 3 Frequency hi Register
         {
             rom[addr] = data;
+
+            // Writing a byte with bit 7 set causes a
+            // trigger event for channel 1 in the APU
+            if (data & (1 << 7)) {
+                triggerEventCh3 = true;
+            }
         }
         else if (addr == 0xFF20) // Channel 4 Sound length/wave pattern duty Register
         {
             rom[addr] = data;
+            reloadCh4LengthTimer = true;
         }
         else if (addr == 0xFF21) // Channel 4 Volume Envelope Register
         {
@@ -503,6 +525,12 @@ void Memory::Write(uWORD addr, uBYTE data)
         else if (addr == 0xFF23) // Channel 4 Counter/Consecutive Register
         {
             rom[addr] = data;
+
+            // Writing a byte with bit 7 set causes a
+            // trigger event for channel 1 in the APU
+            if (data & (1 << 7)) {
+                triggerEventCh4 = true;
+            }
         }
         else if (addr == 0xFF24) // Channel Control Register
         {
@@ -514,8 +542,7 @@ void Memory::Write(uWORD addr, uBYTE data)
         }
         else if (addr == 0xFF26) // Sound On/Off
         {
-            data = (data & 0x80) | (rom[addr] & 0x7F); // Only bit 7 is writable
-            rom[addr] = data;
+            rom[addr] |= (data & (1 << 7)); // Only bit 7 is writeable
         }
         else if ((addr >= 0xFF30) && (addr < 0xFF40)) // Wave Pattern RAM
         {
@@ -526,18 +553,12 @@ void Memory::Write(uWORD addr, uBYTE data)
         }
         else if (addr == 0xFF40) // LCDC Register
         {
-            uBYTE mode = getStatMode();
-            if (!(data & 0x80))
-            {
-                if (mode != 1)
-                {
-                    data |= 0x80;
-                }
-            }
             rom[addr] = data;
         }
         else if (addr == 0xFF41) // STAT Register
         {
+            // This weird hackery is to ensure that read only bits
+            // are not being overwritten. (bits 0-2 are read only)
             uBYTE temp = rom[addr] & 0x07;
             data |= 0x80;
             data = data & 0xF8;
@@ -668,9 +689,9 @@ uBYTE Memory::Read(uWORD addr, bool debugRead)
         uBYTE mode = getStatMode();
 
         if (mode == 3)
-            return rom[addr];
+            return 0xFF;
 
-        return 0xFF;
+        return rom[addr];
     }
     else if ((addr >= 0xA000) && (addr < 0xC000) && !dmaTransferInProgress) // External RAM
     {
@@ -1000,4 +1021,76 @@ void Memory::handleJoypadTranslation(uBYTE data) {
         result = data | ((joypadBuffer & 0xF0) >> 4);
         rom[JOYPAD_INPUT_REG] = result;
     }
+}
+
+bool Memory::RequiresCh1LengthReload() {
+    if (reloadCh1LengthTimer) {
+        reloadCh1LengthTimer = false;
+        return true;
+    }
+
+    return reloadCh1LengthTimer;
+}
+
+bool Memory::RequiresCh2LengthReload() {
+    if (reloadCh2LengthTimer) {
+        reloadCh2LengthTimer = false;
+        return true;
+    }
+
+    return reloadCh2LengthTimer;
+}
+
+bool Memory::RequiresCh3LengthReload() {
+    if (reloadCh3LengthTimer) {
+        reloadCh3LengthTimer = false;
+        return true;
+    }
+
+    return reloadCh3LengthTimer;
+}
+
+bool Memory::RequiresCh4LengthReload() {
+    if (reloadCh4LengthTimer) {
+        reloadCh4LengthTimer = false;
+        return true;
+    }
+
+    return reloadCh4LengthTimer;
+}
+
+bool Memory::TriggerEventCh1() {
+    if (triggerEventCh1) {
+        triggerEventCh1 = false;
+        return true;
+    }
+
+    return false;
+}
+
+bool Memory::TriggerEventCh2() {
+    if (triggerEventCh2) {
+        triggerEventCh2 = false;
+        return true;
+    }
+
+    return false;
+}
+
+bool Memory::TriggerEventCh3() {
+    if (triggerEventCh3) {
+        triggerEventCh3 = false;
+        return true;
+    }
+
+    return false;
+}
+
+bool Memory::TriggerEventCh4() {
+    if (triggerEventCh4) {
+        triggerEventCh4 = false;
+        return true;
+    }
+
+    return false;
 }

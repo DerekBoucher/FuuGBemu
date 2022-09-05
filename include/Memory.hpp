@@ -39,6 +39,8 @@ typedef unsigned short uWORD;
 class Memory {
 
     friend class Gameboy;
+    friend class Apu;
+    friend class SideNav;
 
 public:
     Memory();
@@ -56,6 +58,16 @@ public:
     uBYTE DmaRead(uWORD);
     void SetPostBootRomState();
 
+    bool RequiresCh1LengthReload();
+    bool RequiresCh2LengthReload();
+    bool RequiresCh3LengthReload();
+    bool RequiresCh4LengthReload();
+
+    bool TriggerEventCh1();
+    bool TriggerEventCh2();
+    bool TriggerEventCh3();
+    bool TriggerEventCh4();
+
 private:
     void changeRomBank(uWORD, uBYTE);
     void changeRamBank(uBYTE);
@@ -71,6 +83,16 @@ private:
     bool bootRomClosed;
     bool dmaTransferInProgress;
     uWORD translatedAddr;
+
+    // APU flags
+    bool reloadCh1LengthTimer = false;
+    bool reloadCh2LengthTimer = false;
+    bool reloadCh3LengthTimer = false;
+    bool reloadCh4LengthTimer = false;
+    bool triggerEventCh1 = false;
+    bool triggerEventCh2 = false;
+    bool triggerEventCh3 = false;
+    bool triggerEventCh4 = false;
 
     enum CartAttributes {
         ramEnabled,
@@ -103,7 +125,8 @@ private:
 
     uBYTE rom[NATIVE_ROM_SIZE];
     uBYTE cartridge[MAX_CART_SIZE];
-    uBYTE bootRom[BOOTROM_SIZE] = {
+
+    const uBYTE bootRom[BOOTROM_SIZE] = {
         0x31, 0xFE, 0xFF, 0xAF, 0x21, 0xFF, 0x9F, 0x32, 0xCB, 0x7C,
         0x20, 0xFB, 0x21, 0x26, 0xFF, 0x0E, 0x11, 0x3E, 0x80, 0x32,
         0xE2, 0x0C, 0x3E, 0xF3, 0xE2, 0x32, 0x3E, 0x77, 0x77, 0x3E,

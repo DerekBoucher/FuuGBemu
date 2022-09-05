@@ -27,6 +27,7 @@
 
 class Cpu
 {
+    friend class SideNav;
 public:
     Cpu();
     Cpu(Cpu&) = delete;

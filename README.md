@@ -8,6 +8,13 @@ All credit goes to codeslinger!
 
 <img src="images/DrMario.png" width=30% height=30%> <img src="images/Tetris.png" width=30% height=30%> <img src="images/Zelda.png" width=30% height=30%>
 
+## Cloning
+
+This repo relies on imgui submodules:
+```
+git clone --recurse-submodules
+```
+
 ## How To Build
     MAC OS X
         (not supported yet)
@@ -15,10 +22,10 @@ All credit goes to codeslinger!
     WINDOWS
         (not supported yet)
 
-    LINUX/UBUNTU
+    LINUX/UBUNTU/DEBIAN
         1.  Make sure you have the build-essential package installed. You will also need some OpenGL libraries. You can get all of those dependencies via your distro's
             package manager. For Ubuntu:
-                sudo apt install build-essential libglfw3-dev libglew-dev
+                sudo apt install build-essential libglfw3-dev libglew-dev libpulse-dev libfreetype6-dev
             P.S. The build-essential package includes most of the GNU Toolchain such as make, gcc/g++, etc...
         2.  Execute the following command from the root of this repo:
                 make debug

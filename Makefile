@@ -1,13 +1,17 @@
 # Compilation/Linking variables
 CXX = g++
-INCLUDES = -Iinclude/
+INCLUDES = -Iinclude/ -Iimgui/ -Iimgui/backends -Iimgui/misc -Iimgui_club
 COMPILE_FLAGS = -std=c++17 -Wall -pthread $(INCLUDES)
-LIBS = -lGL -lglfw -lGLEW  -lpthread
+LIBS = -lGL -lglfw -lGLEW -lpthread -lpulse-simple -lpulse -ldl
+IMGUI_SRC_PATH = imgui
 SRC_PATH = src
 BUILD_PATH = build
 BIN_PATH = $(BUILD_PATH)/bin
 BIN_NAME = FuuGBemu
-CPP_SOURCES = $(shell find $(SRC_PATH) -name '*.cpp' | sort -k 1nr | cut -f2-)
+CPP_SOURCES = $(shell find $(SRC_PATH) -name '*.cpp' | sort -k 1nr | cut -f2-) \
+ $(shell find $(IMGUI_SRC_PATH) -name '*glfw.cpp' | sort -k 1nr | cut -f2-) \
+ $(shell find $(IMGUI_SRC_PATH) -name '*opengl3.cpp' | sort -k 1nr | cut -f2-) \
+ $(shell find $(IMGUI_SRC_PATH) -maxdepth 1 -name '*.cpp' | sort -k 1nr | cut -f2-)
 
 # Platform specific flags
 ifeq ($(OS),Windows_NT)
@@ -20,14 +24,15 @@ else
 	endif
 endif
 
-OBJECTS = $(CPP_SOURCES:$(SRC_PATH)/%.cpp=$(BUILD_PATH)/%.o)
+OBJECTS = $(filter %.o, $(CPP_SOURCES:$(SRC_PATH)/%.cpp=$(BUILD_PATH)/%.o) \
+	$(CPP_SOURCES:$(IMGUI_SRC_PATH)/%.cpp=$(BUILD_PATH)/%.o))
 
 # Rules
 .PHONY: debug release makeDirs clean
 
 debug: makeDirs
 	@echo "Building debug x86_64..."
-	@$(eval export DEBUG_FLAGS =-g -DFUUGB_DEBUG)
+	@$(eval export DEBUG_FLAGS =-g3 -DFUUGB_DEBUG)
 	@$(MAKE) $(BIN_PATH)/$(BIN_NAME)
 
 release: makeDirs
@@ -57,3 +62,10 @@ $(BIN_PATH)/$(BIN_NAME) : $(OBJECTS)
 $(BUILD_PATH)/%.o: $(SRC_PATH)/%.cpp
 	@echo "Compiling: $< -> $@"
 	$(CXX) $(COMPILE_FLAGS) $(DEBUG_FLAGS) $(RELEASE_FLAGS) -MP -MMD -c $< -o $@
+
+$(BUILD_PATH)/%.o: $(IMGUI_SRC_PATH)/%.cpp
+	@echo "Compiling: $< -> $@"
+	$(CXX) $(COMPILE_FLAGS) $(DEBUG_FLAGS) $(RELEASE_FLAGS) -MP -MMD -c $< -o $@
+
+echo:
+	@echo $(OBJECTS)

@@ -1,35 +1,49 @@
 #include "Gameboy.hpp"
 
-const int CyclesPerFrame = 69905;
+const int CyclesPerFrame = CPU_FREQUENCY_HZ / 60;
+const double singleFramePeriod = 1.0 / 60.0;
 
 Gameboy::Gameboy() {}
 
 Gameboy::~Gameboy() {}
 
 Gameboy::Gameboy(uBYTE romData[MAX_CART_SIZE], GLFWwindow* context) {
-
-    // Set up memory
     memory.ReadRom(romData);
 
-    // Set up cpu
     cpu.SetMemory(&memory);
 
-    // Compile shaders
     Shader vertexShader = Shader("src/opengl/shaders/Vertex.shader");
     Shader fragmentShader = Shader("src/opengl/shaders/Fragment.shader");
 
-    // Set up ppu
     ppu.SetContext(context);
     ppu.AttachShaders(vertexShader, fragmentShader);
     ppu.SetMemory(&memory);
     ppu.InitializeGLBuffers();
+
+    apu = std::unique_ptr<Apu>(new Apu(&memory));
+
+    requireRender = false;
 }
 
-void Gameboy::Wait() {
-    std::unique_lock<std::mutex> pauseLock(mtx);
-    cv.wait(pauseLock);
-    pauseLock.unlock();
+void Gameboy::WaitRender() {
+    std::unique_lock<std::mutex> lock(mtx);
+    renderingCV.wait(lock);
+    lock.unlock();
+}
+
+void Gameboy::WaitResume() {
+    std::unique_lock<std::mutex> lock(mtx);
+    pauseCV.wait(lock);
+    lock.unlock();
     pause = false;
+}
+
+void Gameboy::Pause() {
+    pause = true;
+}
+
+void Gameboy::Resume() {
+    pauseCV.notify_one();
 }
 
 void Gameboy::Start() {
@@ -39,8 +53,11 @@ void Gameboy::Start() {
 
 void Gameboy::Stop() {
     running = false;
-    if (thread->joinable())
-        thread->join();
+    while (!finished) {
+        renderingCV.notify_one();
+        pauseCV.notify_one();
+    }
+    thread->join();
 }
 
 void Gameboy::SkipBootRom() {
@@ -49,9 +66,13 @@ void Gameboy::SkipBootRom() {
 }
 
 void Gameboy::Run() {
+    // For FPS Capping
+    double lastFrameTimeStamp = glfwGetTime();
 
-    // Set the context as current on this thread
-    ppu.BindContext();
+#ifdef FUUGB_DEBUG
+    int frames = 0;
+    double lastFPSCounterTimestamp = glfwGetTime();
+#endif
 
     // Main gameboy loop
     while (running) {
@@ -67,7 +88,7 @@ void Gameboy::Run() {
 
             // If gameboy is paused, pause the thread
             if (pause) {
-                Wait();
+                WaitResume();
             }
 
             // If cpu is halted, halt it
@@ -84,6 +105,7 @@ void Gameboy::Run() {
             cyclesThisUpdate += cycles;
             ppu.UpdateGraphics(cycles);
             memory.UpdateDmaCycles(cycles);
+            apu->UpdateSoundRegisters(cycles);
 
             // Process interrupts
             if (!cpu.Halted) {
@@ -91,9 +113,33 @@ void Gameboy::Run() {
             }
         }
 
-        // Render screen
-        ppu.Render();
+        // Not the fanciest solution, but here we wait
+        // until at least a singleFramePeriod of time has
+        // passed before rendering the next frame.
+        // This is to avoid some machines with faster hardware
+        // to have the gameboy run too quickly.
+        // (This caps the emulation at ~60FPS)
+        double currentTime = glfwGetTime();
+        while (currentTime - lastFrameTimeStamp < singleFramePeriod)
+            currentTime = glfwGetTime();
+
+        lastFrameTimeStamp = glfwGetTime();
+
+        // Ask the main thread to perform the rendering
+        requireRender = true;
+        WaitRender();
+
+#ifdef FUUGB_DEBUG
+        frames++;
+        if (currentTime - lastFPSCounterTimestamp >= 1.0) {
+            std::cout << "FPS: " << frames << std::endl;
+            frames = 0;
+            lastFPSCounterTimestamp = glfwGetTime();
+        }
+#endif
     }
+
+    finished = true;
 }
 
 void Gameboy::HandleKeyboardInput(int key, int scancode, int action, int modBits) {
@@ -165,4 +211,14 @@ void Gameboy::HandleKeyboardInput(int key, int scancode, int action, int modBits
         memory.RequestInterupt(CONTROL_INT);
         return;
     }
+}
+
+bool Gameboy::RequiresRender() {
+    return requireRender;
+}
+
+void Gameboy::Render() {
+    ppu.Render();
+    requireRender = false;
+    renderingCV.notify_one();
 }

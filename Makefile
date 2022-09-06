@@ -5,6 +5,7 @@ COMPILE_FLAGS = -std=c++17 -Wall -pthread $(INCLUDES)
 LIBS = -lGL -lglfw -lGLEW -lpthread -lpulse-simple -lpulse -ldl
 IMGUI_SRC_PATH = imgui
 SRC_PATH = src
+SRC_INCLUDE_PATH = include
 BUILD_PATH = build
 BIN_PATH = $(BUILD_PATH)/bin
 BIN_NAME = FuuGBemu
@@ -32,7 +33,7 @@ OBJECTS = $(filter %.o, $(CPP_SOURCES:$(SRC_PATH)/%.cpp=$(BUILD_PATH)/%.o) \
 
 debug: makeDirs
 	@echo "Building debug x86_64..."
-	@$(eval export DEBUG_FLAGS =-g3 -DFUUGB_DEBUG)
+	@$(eval export DEBUG_FLAGS =-g -DFUUGB_DEBUG)
 	@$(MAKE) $(BIN_PATH)/$(BIN_NAME)
 
 release: makeDirs
@@ -59,7 +60,7 @@ $(BIN_PATH)/$(BIN_NAME) : $(OBJECTS)
 	@$(RM) $(BIN_NAME)
 	@ln -s $(BIN_PATH)/$(BIN_NAME) $(BIN_NAME)
 
-$(BUILD_PATH)/%.o: $(SRC_PATH)/%.cpp
+$(BUILD_PATH)/%.o: $(SRC_PATH)/%.cpp $(SRC_INCLUDE_PATH)/%.hpp
 	@echo "Compiling: $< -> $@"
 	$(CXX) $(COMPILE_FLAGS) $(DEBUG_FLAGS) $(RELEASE_FLAGS) -MP -MMD -c $< -o $@
 

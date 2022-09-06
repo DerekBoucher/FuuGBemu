@@ -20,7 +20,7 @@ class Gameboy {
 
 public:
     Gameboy();
-    Gameboy(uBYTE romData[MAX_CART_SIZE], GLFWwindow* context);
+    Gameboy(uBYTE* romData, GLFWwindow* context);
     ~Gameboy();
 
     void Start();
@@ -39,6 +39,7 @@ private:
 
     Cpu cpu;
     Ppu ppu;
+    Apu apu;
     Memory memory;
 
     bool running;
@@ -50,7 +51,6 @@ private:
     std::condition_variable renderingCV;
     std::condition_variable pauseCV;
 
-    std::unique_ptr<Apu> apu;
     std::unique_ptr<std::thread> thread;
 
     void Run();

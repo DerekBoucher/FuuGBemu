@@ -7,20 +7,18 @@ Gameboy::Gameboy() {}
 
 Gameboy::~Gameboy() {}
 
-Gameboy::Gameboy(uBYTE romData[MAX_CART_SIZE], GLFWwindow* context) {
+Gameboy::Gameboy(uBYTE* romData, GLFWwindow* context) {
     memory.ReadRom(romData);
 
     cpu.SetMemory(&memory);
+    apu.SetMemory(&memory);
+    ppu.SetMemory(&memory);
 
     Shader vertexShader = Shader("src/opengl/shaders/Vertex.shader");
     Shader fragmentShader = Shader("src/opengl/shaders/Fragment.shader");
 
-    ppu.SetContext(context);
     ppu.AttachShaders(vertexShader, fragmentShader);
-    ppu.SetMemory(&memory);
     ppu.InitializeGLBuffers();
-
-    apu = std::unique_ptr<Apu>(new Apu(&memory));
 
     requireRender = false;
 }
@@ -105,7 +103,7 @@ void Gameboy::Run() {
             cyclesThisUpdate += cycles;
             ppu.UpdateGraphics(cycles);
             memory.UpdateDmaCycles(cycles);
-            apu->UpdateSoundRegisters(cycles);
+            apu.UpdateSound(cycles);
 
             // Process interrupts
             if (!cpu.Halted) {

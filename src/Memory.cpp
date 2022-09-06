@@ -1,14 +1,19 @@
 #include "Memory.hpp"
 
 Memory::Memory() {
+    rom = new uBYTE[NATIVE_ROM_SIZE];
+    cartridge = new uBYTE[MAX_CART_SIZE];
 
+    memset(rom, 0x00, NATIVE_ROM_SIZE);
+    memset(cartridge, 0x00, MAX_CART_SIZE);
 }
 
 Memory::~Memory() {
-
+    delete[] rom;
+    delete[] cartridge;
 }
 
-void Memory::ReadRom(uBYTE data[MAX_CART_SIZE]) {
+void Memory::ReadRom(uBYTE* data) {
     memcpy(cartridge, data, MAX_CART_SIZE);
 
     // Set the joypad buffer bits to HIGH
@@ -546,10 +551,8 @@ void Memory::Write(uWORD addr, uBYTE data)
         }
         else if ((addr >= 0xFF30) && (addr < 0xFF40)) // Wave Pattern RAM
         {
-            if (rom[0xFF1A] & 0x80) // Only accessible if CH3 bit 7 is reset
-            {
+            if (!(rom[0xFF1A] & (1 << 7))) // Only accessible if CH3 bit 7 is reset
                 rom[addr] = data;
-            }
         }
         else if (addr == 0xFF40) // LCDC Register
         {

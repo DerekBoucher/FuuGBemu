@@ -24,9 +24,6 @@ public:
     ~Ppu();
 
     void UpdateGraphics(int);
-    void SetContext(GLFWwindow* parent);
-    void BindContext();
-    void UnBindContext();
     void Render();
     void AttachShaders(Shader& vs, Shader& fs);
     void SetMemory(Memory* memory);
@@ -43,9 +40,23 @@ private:
 
     struct pixel {
         uBYTE r, g, b, colorCode;
+
+        pixel() {
+            r = 0xFF;
+            g = 0xFF;
+            b = 0xFF;
+            colorCode = 0xFF;
+        };
+
+        pixel(uBYTE R, uBYTE G, uBYTE B, uBYTE colorCode) {
+            r = R;
+            g = G;
+            b = B;
+            colorCode = colorCode;
+        };
     };
 
-    pixel pixels[NATIVE_SIZE_X][NATIVE_SIZE_Y];
+    pixel** pixels;
     uBYTE LCDC;
     uBYTE STAT;
     Memory* memoryRef;
@@ -62,15 +73,15 @@ private:
     uBYTE GetStat();
     uBYTE GetLCDC();
 
-    GLfloat positionVertices[NATIVE_SIZE_X * NATIVE_SIZE_Y * 12];
+    GLfloat* positionVertices;
 
-    std::unique_ptr<Vao> vao;
-    std::unique_ptr<Vbo> positionVBO, colorVBO;
+    Vao* vao;
+    Vbo* positionVBO;
+    Vbo* colorVBO;
 
     constexpr static GLfloat xDiv = 2.0 / 160;
     constexpr static GLfloat yDiv = 2.0 / 144;
 
-    GLFWwindow* window;
     GLuint ShaderProgram;
 };
 

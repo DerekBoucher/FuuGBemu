@@ -58,5 +58,23 @@
             "setupCommands": [],
             "miDebuggerPath": "/usr/bin/gdb"
         },
+        {
+            "name": "PokemonRed",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/FuuGBemu",
+            "args": [
+                "--skip-boot-rom",
+                "testrom/PokemonRed.gb"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerArgs": "-exec -enable-pretty-printing",
+            "setupCommands": [],
+            "miDebuggerPath": "/usr/bin/gdb"
+        },
     ]
 }

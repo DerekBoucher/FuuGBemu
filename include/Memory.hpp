@@ -15,6 +15,7 @@ typedef unsigned short uWORD;
 #include <iostream>
 #include <map>
 #include <string.h>
+#include <memory>
 
 #define VBLANK_INT 0
 #define LCDC_INT 1
@@ -36,6 +37,8 @@ typedef unsigned short uWORD;
 #define IF_ADR 0xFF0F
 #define JOYPAD_INPUT_REG 0xFF00
 
+using namespace std;
+
 class Memory {
 
     friend class Gameboy;
@@ -53,7 +56,7 @@ public:
     void RequestInterupt(int);
     void UpdateDmaCycles(int);
     void UpdateTimers(int);
-    void ReadRom(uBYTE data[MAX_CART_SIZE]);
+    void ReadRom(uBYTE* data);
     uBYTE Read(uWORD, bool = false);
     uBYTE DmaRead(uWORD);
     void SetPostBootRomState();
@@ -110,7 +113,7 @@ private:
         rumble
     };
 
-    std::map<CartAttributes, bool> attributes;
+    map<CartAttributes, bool> attributes;
 
     uWORD currentRomBank;
     uWORD currentRamBank;
@@ -123,8 +126,8 @@ private:
 
     uBYTE joypadBuffer;
 
-    uBYTE rom[NATIVE_ROM_SIZE];
-    uBYTE cartridge[MAX_CART_SIZE];
+    uBYTE* rom;
+    uBYTE* cartridge;
 
     const uBYTE bootRom[BOOTROM_SIZE] = {
         0x31, 0xFE, 0xFF, 0xAF, 0x21, 0xFF, 0x9F, 0x32, 0xCB, 0x7C,

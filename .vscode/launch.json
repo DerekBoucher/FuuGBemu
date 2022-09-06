@@ -41,25 +41,21 @@
             "miDebuggerPath": "/usr/bin/gdb"
         },
         {
-            "name": "FuuGBemu - Test Audio",
+            "name": "MarioLand",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/FuuGBemu",
             "args": [
-                "--test-audio"
+                "--skip-boot-rom",
+                "testrom/MarioLand.gb"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ],
+            "miDebuggerArgs": "-exec -enable-pretty-printing",
+            "setupCommands": [],
             "miDebuggerPath": "/usr/bin/gdb"
         },
     ]

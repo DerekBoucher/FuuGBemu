@@ -10,6 +10,7 @@
 #include <condition_variable>
 
 #include "Memory.hpp"
+#include "SideNav.hpp"
 
 #define NR10 0xFF10 // Channel 1 Sweep Register
 #define NR11 0xFF11 // Channel 1 Sound length/Wave Pattern duty
@@ -49,14 +50,12 @@
 
 #define AUDIO_BUFFER_SIZE 1024
 
-#define FRAME_SEQUENCE_VOLUME_CLOCK 7
-#define FRAME_SEQUENCE_SWEEP_CLOCK_2 2
-#define FRAME_SEQUENCE_SWEEP_CLOCK_6 6
-
 #define INCREASING true
 #define DECREASING false
 
 class Apu {
+
+    friend class SideNav;
 
 public:
     Apu();
@@ -64,21 +63,27 @@ public:
     ~Apu();
 
     void UpdateSoundRegisters(int cycles);
+
 private:
     void FlusherRoutine();
     void NotifyFlusher();
     void FlushBuffer();
     void UpdateFrameSequencer(int cycles);
-    uBYTE ComputeChannel1Ampltiude();
+    uBYTE ComputeChannel1Amplitude(int cycles);
     uBYTE ComputeChannel2Amplitude(int cycles);
+
+    // Emulator specific channel toggles
+    bool debuggerCh1Toggle;
+    bool debuggerCh2Toggle;
 
     Memory* memRef;
 
     // Audio buffer flusher thread routine
     bool flusherRunning;
+    std::mutex flusherMtx;
     std::unique_ptr<std::thread> apuFlusher;
-    std::mutex loopMtx;
-    std::condition_variable loopCv;
+    std::unique_lock<std::mutex> flusherLock;
+    std::condition_variable flusherCv;
 
     // Audio sample buffer variables
     std::mutex bufferLock;
@@ -96,7 +101,6 @@ private:
     // Square Channel 1 variables
     bool ch1Disabled;
     int ch1ShadowFrequency;
-    int ch1Frequency;
     int ch1FrequencyTimer;
     int ch1VolumeTimer;
     uBYTE ch1CurrentVolume;

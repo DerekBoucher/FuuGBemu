@@ -1,6 +1,6 @@
 #include "SideNav.hpp"
 
-const ImVec4 tabSelectedColor = ImVec4(83.0f, 132.0f, 193.0f, 255.0f);
+const ImVec4 tabSelectedColor = ImVec4(0.0f, 0.0f, 200.0f, 255.0f);
 
 SideNav::SideNav(Gameboy* gbRef) {
     this->gbRef = gbRef;
@@ -15,7 +15,7 @@ bool SideNav::Init(GLFWwindow* windowRef) {
     ImGui::CreateContext();
 
     // Global Styling
-    ImGui::StyleColorsLight();
+    ImGui::StyleColorsDark();
     initResult = ImGui_ImplGlfw_InitForOpenGL(windowRef, true);
     if (!initResult) {
         return initResult;
@@ -134,7 +134,9 @@ void SideNav::renderVideoPane() {
 }
 
 void SideNav::renderAudioPane() {
-    // TODO
+    ImGui::Text("Sound channel toggles:");
+    ImGui::Checkbox("Channel 1", &gbRef->apu->debuggerCh1Toggle);
+    ImGui::Checkbox("Channel 2", &gbRef->apu->debuggerCh2Toggle);
 }
 
 void SideNav::Shutdown() {
@@ -168,6 +170,11 @@ void SideNav::renderDebuggerTabButtons() {
     ImGui::SameLine();
     if (ImGui::Button("Video", ImVec2(IMGUI_SIZE_X / 3, 20))) {
         selection = VIDEO;
+    }
+
+    if (requiresStylePopping) {
+        ImGui::PopStyleColor();
+        requiresStylePopping = false;
     }
 
     if (selection == AUDIO) {

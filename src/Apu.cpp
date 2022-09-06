@@ -65,7 +65,6 @@ Apu::Apu(Memory* memRef) {
     ch1VolumeTimer = 0;
     ch1WaveDutyPointer = 0;
     ch1ShadowFrequency = 0;
-    ch1Frequency = 0;
     ch1LengthTimer = 64;
     ch1FrequencyTimer = 0;
     ch1VolumeTimer = 0;
@@ -87,13 +86,18 @@ Apu::Apu(Memory* memRef) {
 
     // Start the audio buffer flusher thread.
     flusherRunning = true;
+    flusherLock = std::unique_lock<std::mutex>(flusherMtx);
     apuFlusher = std::unique_ptr<std::thread>(new std::thread(&Apu::FlusherRoutine, this));
+
+    // Emulator specific channel toggles
+    debuggerCh1Toggle = true;
+    debuggerCh2Toggle = true;
 }
 
 Apu::~Apu() {
     // Stop the audio buffer flusher thread and wait for it.
     flusherRunning = false;
-    loopCv.notify_one();
+    flusherCv.notify_one();
     if (apuFlusher->joinable()) {
         apuFlusher->join();
     }
@@ -109,10 +113,9 @@ void Apu::FlusherRoutine() {
     //  2. If a signal comes in, flush the audio buffer.
     //  3. Repeat. (until the flusherRunning boolean is false)
     while (flusherRunning) {
-        std::unique_lock<std::mutex> loopLock(loopMtx);
-        loopCv.wait(loopLock);
+        flusherCv.wait(flusherLock);
         FlushBuffer();
-        loopLock.unlock();
+        flusherMtx.unlock();
     }
 
     // Drain any remaining audio samples sent to the audio server.
@@ -127,7 +130,7 @@ void Apu::FlusherRoutine() {
 }
 
 void Apu::NotifyFlusher() {
-    loopCv.notify_one();
+    flusherCv.notify_one();
 }
 
 void Apu::FlushBuffer() {
@@ -164,7 +167,9 @@ void Apu::UpdateSoundRegisters(int cycles) {
     //      4.  Cartridge defined sound
     // Here we have to keep track of two copies of all channel's amplitudes;
     // one for the left output and another for the right output (stereo sound).
+    uBYTE leftCh1Amplitude = ComputeChannel1Amplitude(cycles);
     uBYTE leftCh2Amplitude = ComputeChannel2Amplitude(cycles);
+    uBYTE rightCh1Amplitude = leftCh1Amplitude;
     uBYTE rightCh2Amplitude = leftCh2Amplitude;
 
     // NR50 - Enable Left (bit 7) (Unused) / Left speaker volume (bit 6-4) / Enable Right (bit 3) (Unused) / Right speaker volume bit (2-0)
@@ -179,8 +184,21 @@ void Apu::UpdateSoundRegisters(int cycles) {
     // https://gbdev.io/pandocs/Sound_Controller.html#ff26---nr52---sound-onoff
     uBYTE nr52 = memRef->rom[NR52];
 
+    bool ch1LeftEnabled = nr51 & (1 << 4);
     bool ch2LeftEnabled = nr51 & (1 << 5);
-    bool ch2RightEnabled = nr51 & (1 << 2);
+    // bool ch3LeftEnabled = nr51 & (1 << 6);
+    // bool ch4LeftEnabled = nr51 & (1 << 7);
+
+    bool ch1RightEnabled = nr51 & (1 << 0);
+    bool ch2RightEnabled = nr51 & (1 << 1);
+    // bool ch3RightEnabled = nr51 & (1 << 2);
+    // bool ch4RightEnabled = nr51 & (1 << 3);
+
+    if (!ch1LeftEnabled)
+        leftCh1Amplitude = 0;
+
+    if (!ch1RightEnabled)
+        rightCh1Amplitude = 0;
 
     if (!ch2LeftEnabled)
         leftCh2Amplitude = 0;
@@ -189,8 +207,8 @@ void Apu::UpdateSoundRegisters(int cycles) {
         rightCh2Amplitude = 0;
 
     // Mix the amplitudes of all channels
-    uBYTE leftSample = leftCh2Amplitude;
-    uBYTE rightSample = rightCh2Amplitude;
+    uBYTE leftSample = (leftCh1Amplitude + leftCh2Amplitude) / 2;
+    uBYTE rightSample = (rightCh1Amplitude + rightCh2Amplitude) / 2;
 
     // Apply left volume
     leftSample = applyVolume((nr50 & (0b01110000)) >> 4, 0x7, leftSample);
@@ -202,9 +220,8 @@ void Apu::UpdateSoundRegisters(int cycles) {
     // audio buffer. We only need to send samples every
     // CPU_FREQUENCY_HZ / AUDIO_SAMPLING_FREQUENCY_HZ cycles.
     addToBufferTimer -= cycles;
-    if (addToBufferTimer > 0) {
+    if (addToBufferTimer > 0)
         return;
-    }
 
     // If it is time to add new samples, refresh the timer value.
     // Here we add addToBufferTimer's cycles that might've resulted in a negative value, for better accuracy.
@@ -233,7 +250,7 @@ void Apu::UpdateSoundRegisters(int cycles) {
     }
 }
 
-uBYTE Apu::ComputeChannel1Ampltiude() {
+uBYTE Apu::ComputeChannel1Amplitude(int cycles) {
     uBYTE ch1Amplitude = 0;
 
     uBYTE nr10 = memRef->rom[NR10];
@@ -242,33 +259,31 @@ uBYTE Apu::ComputeChannel1Ampltiude() {
     uBYTE nr13 = memRef->rom[NR13];
     uBYTE nr14 = memRef->rom[NR14];
 
-    uBYTE volumePeriod = nr12 & (0b00000111);
-    uBYTE initialVolume = (nr12 & (0b11110000)) >> 4;
+    bool lengthEnabled = nr14 & (1 << 6);
+    bool volumeDirection = nr12 & (1 << 3);
+    uBYTE lengthPeriod = nr11 & 0b00111111;
+    uBYTE volumePeriod = nr12 & 0b00000111;
+    uBYTE initialVolume = (nr12 & 0b11110000) >> 4;
+
     uBYTE sweepPeriod = (nr10 & (0b01110000)) >> 4;
     uBYTE sweepShift = nr10 & 0b00000111;
-    uBYTE wavePatternDuty = (nr11 & 0b11000000) >> 6;
-    uBYTE lengthPeriod = nr11 & 0b00111111;
-
-    bool volumeDirection = nr12 & 0b00001000;
     bool sweepDirection = nr10 & 0b00001000;
-    bool lengthEnabled = nr14 & 0b01000000;
     bool sweepEnabled = false;
 
     // Trigger event for channel 1 (when bit 7 of NR14 is set)
     // The following occur:
     //  - The channel is re-enabled
+    //  - If the channel's length timer is 0, it is reloaded with value 64.
+    //  - The channel's frequency timer is reloaded with nr14 | nr13
     //  - The volume timer for the volume envelope is refreshed with the volume period (bits 2-0 in NR12)
     //  - The current volume is refreshed with the initial volume (bits 7-4 in NR12)
     //  - The shadow frequency is refreshed with the current frequency
     //  - The frequency sweep timer is refreshed with the sweep period (bits 6-4 in NR10)
-    //  - If the sweep period was 0, the timer defaults to 8
+    //  - If the sweep  (or timer, in this case) was 0, the timer defaults to 8
     //  - If the sweep period OR the sweep shift amount are non-zero, then frequency sweeping is enabled
     //  - If the sweep shift is non-zero, recalculate the new frequency value to check if there's a resulting overflow
     //  - If there is an overflow, disable the channel
-    //  - The length timer is reloaded with 64, if it was 0
-    if (nr14 & (1 << 7)) {
-        memRef->rom[NR14] = nr14 & ~(1 << 7);
-
+    if (memRef->TriggerEventCh1()) {
         ch1Disabled = false;
 
         if (ch1LengthTimer == 0)
@@ -277,60 +292,83 @@ uBYTE Apu::ComputeChannel1Ampltiude() {
         ch1FrequencyTimer = determineSquareWaveFrequencyTimerValue(nr14, nr13);
         ch1VolumeTimer = volumePeriod;
         ch1CurrentVolume = initialVolume;
-        ch1ShadowFrequency = ch1Frequency;
+        ch1ShadowFrequency = ch1FrequencyTimer;
         ch1SweepTimer = sweepPeriod;
 
         if (ch1SweepTimer == 0)
             ch1SweepTimer = 8;
 
+        sweepEnabled = false;
+
         if (sweepPeriod > 0 || sweepShift > 0)
             sweepEnabled = true;
-        else
-            sweepEnabled = false;
 
         if (sweepShift > 0) {
-            int newFrequency = determineChannelFrequency(sweepDirection, sweepShift, ch1ShadowFrequency);
+            ch1FrequencyTimer = determineChannelFrequency(sweepDirection, sweepShift, ch1ShadowFrequency);
 
-            if (newFrequency > 2047) {
+            if (ch1FrequencyTimer > 2047) {
                 ch1Disabled = true;
             }
         }
     }
 
-    // First, decrement the frequency timer for the channel
-    ch1FrequencyTimer--;
-
-    // Fetch the raw wave pattern amplitude for channel 1
-    uBYTE wavePattern = determineChannelWavePattern(nr11);
-    if (wavePattern & (1 << ch1WaveDutyPointer)) {
-        ch1Amplitude = 127;
-    }
-    else {
-        ch1Amplitude = 0;
-    }
-
-    if (volumeEnvelopeTick) {
-        volumeEnvelopeFunction(ch1VolumeTimer, ch1CurrentVolume, volumePeriod, volumeDirection);
-    }
-
-    if (sweepTick) {
+    // If the frame sequencer clocks a sweep tick,
+    // apply the frequency sweep function.
+    if (sweepTick)
         frequencySweepFunction(ch1SweepTimer,
-            ch1Frequency,
+            ch1FrequencyTimer,
             ch1ShadowFrequency,
             ch1Disabled,
             sweepEnabled,
             sweepPeriod,
             sweepDirection,
             sweepShift);
+
+    // substract the amount of cpu cycles that have occured from the
+    // frequency timer.
+    ch1FrequencyTimer -= cycles;
+
+    // If this results in the frequency timer reaching 0, then we
+    // reset the timer's value with what is in NR24 (bits 2-0) | NR23 (8 bit value).
+    // we also increment the wave pattern pointer when this happens.
+    if (ch1FrequencyTimer <= 0) {
+        ch1FrequencyTimer = determineSquareWaveFrequencyTimerValue(nr14, nr13) + ch1FrequencyTimer;
+
+        // The pointer value can only be within 0-7, and loops back once it
+        // reaches 8.
+        ch1WaveDutyPointer = (ch1WaveDutyPointer + 1) % 8;
     }
 
-    if (memRef->RequiresCh2LengthReload()) {
-        ch2LengthTimer = 64 - lengthPeriod;
-    }
+    // Fetch the raw wave amplitude for channel 1's wave pattern.
+    // If the bit at the pointer is '1', then the amplitude is at its maximum value of 255.
+    uBYTE wavePattern = determineChannelWavePattern(nr11);
+    if (wavePattern & (1 << ch1WaveDutyPointer))
+        ch1Amplitude = 255;
 
-    if (lengthControlTick && lengthEnabled) {
+    // If the frame sequencer ticked a volume envelope, then apply the volume envelope on the volume.
+    if (volumeEnvelopeTick)
+        volumeEnvelopeFunction(ch1VolumeTimer, ch1CurrentVolume, volumePeriod, volumeDirection);
+
+    // Apply volume to amplitude.
+    ch1Amplitude = applyVolume(ch1CurrentVolume, 0xF, ch1Amplitude);
+
+
+    // If the CPU wrote a value to NR11, then this indicates that we
+    // need to restore the timer's value with 64 - period.
+    if (memRef->RequiresCh1LengthReload())
+        ch1LengthTimer = 64 - lengthPeriod;
+
+    // If the frame sequencer clocked a length tick, apply the length function to the channel.
+    if (lengthControlTick && lengthEnabled)
         lengthFunction(ch1LengthTimer, ch1Disabled);
-    }
+
+    // If channel is disabled, amplitude drops to 0.
+    if (ch1Disabled)
+        ch1Amplitude = 0;
+
+    // If the user turned the channel off through the debugger, the amplitude drops to 0.
+    if (!debuggerCh1Toggle)
+        ch1Amplitude = 0;
 
     return ch1Amplitude;
 }
@@ -338,57 +376,32 @@ uBYTE Apu::ComputeChannel1Ampltiude() {
 uBYTE Apu::ComputeChannel2Amplitude(int cycles) {
     uBYTE ch2Amplitude = 0;
 
-    // NR21 - Channel 2 Sound length / Wave pattern duty
-    // https://gbdev.io/pandocs/Sound_Controller.html#ff16---nr21---channel-2-sound-lengthwave-pattern-duty-rw
     uBYTE nr21 = memRef->rom[NR21];
-
-    // NR22 - Channel 2 Volume envelope
-    // https://gbdev.io/pandocs/Sound_Controller.html#ff17---nr22---channel-2-volume-envelope-rw
     uBYTE nr22 = memRef->rom[NR22];
-
-    // NR23 - Channel 2 Frequency (Least significant byte)
-    // https://gbdev.io/pandocs/Sound_Controller.html#ff18---nr23---channel-2-frequency-lo-data-w
     uBYTE nr23 = memRef->rom[NR23];
-
-    // NR24 - Channel 2 Frequency (highest significant byte) + Channel enable
-    // https://gbdev.io/pandocs/Sound_Controller.html#ff19---nr24---channel-2-frequency-hi-data-rw
     uBYTE nr24 = memRef->rom[NR24];
 
-    // lengthEnabled determines if the channel should apply the length function
-    // to the output amplitude
     bool lengthEnabled = nr24 & (1 << 6);
-
-    // volumeDirection dictates which way the volume envelope function should alter the volume
-    // of the output amplitude. True = increment volume, False = decrement volume.
     bool volumeDirection = nr22 & (1 << 3);
-
-    // lengthPeriod is the value to restore the lengthTimer once it expires (reaches 0, or trigger event).
     uBYTE lengthPeriod = nr21 & 0b00111111;
-
-    // volumePeriod is the value to restore the volumeTimer once it expires (reaches 0, or trigger event).
-    uBYTE volumePeriod = (nr22 & 0b00000111);
-
-    // initialVolume of the channel once a trigger event occurs.
+    uBYTE volumePeriod = nr22 & 0b00000111;
     uBYTE initialVolume = (nr22 & 0b11110000) >> 4;
 
+    // Trigger event for channel 2 (when bit 7 of NR24 is set)
+    // The following occur:
+    //  - The channel is re-enabled
+    //  - If the channel's length timer is 0, it is reloaded with value 64.
+    //  - The channel's frequency timer is reloaded with nr24 | nr23
+    //  - The volume timer for the volume envelope is refreshed with the volume period (bits 2-0 in NR22)
+    //  - The current volume is refreshed with the initial volume (bits 7-4 in NR22)
     if (memRef->TriggerEventCh2()) {
-
-        // The channel is immediately re-enabled if it was disabled.
         ch2Disabled = false;
 
-        // If the length timer is 0 at this point, restore it with 64.
-        // This seems to be how the hardware handles the lengthTimer on trigger event,
-        // and completely ignores the lengthPeriod value.
         if (ch2LengthTimer == 0)
             ch2LengthTimer = 64;
 
-        // Restore the channel's frequency timer value using NR24 and NR23.
         ch2FrequencyTimer = determineSquareWaveFrequencyTimerValue(nr24, nr23);
-
-        // Restore the volume timer with its period.
         ch2VolumeTimer = volumePeriod;
-
-        // Restore the channel's volume with the initial volume.
         ch2CurrentVolume = initialVolume;
     }
 
@@ -431,6 +444,10 @@ uBYTE Apu::ComputeChannel2Amplitude(int cycles) {
 
     // If channel is disabled, amplitude drops to 0.
     if (ch2Disabled)
+        ch2Amplitude = 0;
+
+    // If the user turned the channel off through the debugger, the amplitude drops to 0.
+    if (!debuggerCh2Toggle)
         ch2Amplitude = 0;
 
     return ch2Amplitude;

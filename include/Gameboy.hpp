@@ -1,9 +1,9 @@
 #ifndef GAMEBOY_H
 #define GAMEBOY_H
 
-#include "Ppu.hpp"
 #include "Memory.hpp"
 #include "Cpu.hpp"
+#include "Ppu.hpp"
 #include "Apu.hpp"
 
 #include <thread>

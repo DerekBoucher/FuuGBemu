@@ -7,6 +7,7 @@ Algorithm for the PPU and Memory Management are taken from http://www.codeslinge
 All credit goes to codeslinger!
 
 <img src="images/DrMario.png" width=30% height=30%> <img src="images/Tetris.png" width=30% height=30%> <img src="images/Zelda.png" width=30% height=30%>
+<img src="images/MarioLand.png" width=30% height=30%>
 
 ## Cloning
 

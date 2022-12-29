@@ -1,6 +1,11 @@
 #include "Ppu.hpp"
 
 Ppu::Ppu() {
+    pixels = new pixel * [NATIVE_SIZE_X];
+    for (int i = 0; i < NATIVE_SIZE_X; i++)
+        pixels[i] = new pixel[NATIVE_SIZE_Y];
+
+    positionVertices = new GLfloat[NATIVE_SIZE_X * NATIVE_SIZE_Y * 12];
 
     // Coordinates for translation from regular video coordinates
     // to openGL's ND coordinates
@@ -32,12 +37,23 @@ Ppu::Ppu() {
             y++;
         }
     }
+
+    positionVBO = new Vbo();
+    colorVBO = new Vbo();
+    vao = new Vao();
+
 }
 
-Ppu::~Ppu() {}
+Ppu::~Ppu() {
+    for (int i = 0; i < NATIVE_SIZE_X; i++)
+        delete[] pixels[i];
 
-void Ppu::SetContext(GLFWwindow* context) {
-    window = context;
+    delete[] pixels;
+    delete[] positionVertices;
+
+    delete vao;
+    delete colorVBO;
+    delete positionVBO;
 }
 
 void Ppu::SetMemory(Memory* memory) {
@@ -45,24 +61,12 @@ void Ppu::SetMemory(Memory* memory) {
 }
 
 void Ppu::InitializeGLBuffers() {
-    positionVBO = std::unique_ptr<Vbo>(new Vbo());
-    colorVBO = std::unique_ptr<Vbo>(new Vbo());
-    vao = std::unique_ptr<Vao>(new Vao());
-
     // Generate the position vertex buffer (remains static)
-    positionVBO->Generate(positionVertices, sizeof(positionVertices));
+    positionVBO->Generate(positionVertices, sizeof(GLfloat) * NATIVE_SIZE_X * NATIVE_SIZE_Y * 12);
 
     // Add the vertex buffers to the vertex array
-    vao->AddBuffer(*positionVBO.get(), { 0, 2, GL_FLOAT, sizeof(GLfloat) * 2, NULL });
-    vao->AddBuffer(*colorVBO.get(), { 1, 3, GL_FLOAT, sizeof(GLfloat) * 3, NULL });
-}
-
-void Ppu::BindContext() {
-    glfwMakeContextCurrent(window);
-}
-
-void Ppu::UnBindContext() {
-    glfwMakeContextCurrent(NULL);
+    vao->AddBuffer(*positionVBO, { 0, 2, GL_FLOAT, sizeof(GLfloat) * 2, NULL });
+    vao->AddBuffer(*colorVBO, { 1, 3, GL_FLOAT, sizeof(GLfloat) * 3, NULL });
 }
 
 void Ppu::Render() {
@@ -113,7 +117,7 @@ void Ppu::DrawPixels() {
         }
     }
 
-    colorVBO->Generate(colorVertices, sizeof(colorVertices));
+    colorVBO->Generate(colorVertices, sizeof(GLfloat) * NATIVE_SIZE_X * NATIVE_SIZE_Y * 18);
 
     // Finally, draw the pixels
     vao->Bind();
@@ -353,6 +357,10 @@ void Ppu::RenderSprites()
 
                 int pixel = sprites[i].xPos + xPix;
 
+                // If the pixel is off screen, nothing to do.
+                if (pixel < 0 || pixel > 159 || currentScanline < 0 || currentScanline > 143)
+                    continue;
+
                 // Determine if sprite pixel has priority over background or window
                 if (!priority && pixels[pixel][currentScanline].colorCode != 0x00) {
                     continue;
@@ -362,6 +370,8 @@ void Ppu::RenderSprites()
             }
         }
     }
+
+    delete[] sprites;
 }
 
 void Ppu::SetLCDStatus()

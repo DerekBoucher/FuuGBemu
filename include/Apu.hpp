@@ -42,6 +42,8 @@
 #define DUTY3 0b00001111 // 50% duty cycle
 #define DUTY4 0b00111111 // 75% duty cycle
 
+#define WAVE_RAM 0xFF30
+
 #define SQUARE_WAVE_MAX_FREQUENCY_HZ 2048
 #define FRAME_SEQUENCER_FREQUENCY_HZ 512
 #define AUDIO_SAMPLING_FREQUENCY_HZ 48000
@@ -57,18 +59,17 @@ class Apu {
 
 public:
     Apu();
-    Apu(Memory* memRef);
     ~Apu();
 
-    void UpdateSoundRegisters(int cycles);
+    void UpdateSound(int cycles);
+    void SetMemory(Memory* memRef);
 
 private:
-    void FlusherRoutine();
-    void NotifyFlusher();
     void FlushBuffer();
     void UpdateFrameSequencer(int cycles);
     uBYTE ComputeChannel1Amplitude(int cycles);
     uBYTE ComputeChannel2Amplitude(int cycles);
+    uBYTE ComputeChannel3Amplitude(int cycles);
 
     // Emulator specific channel toggles
     bool debuggerCh1Toggle;
@@ -113,6 +114,13 @@ private:
     uBYTE ch2LengthTimer;
     uBYTE ch2WaveDutyPointer;
     uBYTE ch2CurrentVolume;
+
+    // Wave RAM Channel 3 variables
+    bool ch3Disabled;
+    int ch3FrequencyTimer;
+    uBYTE ch3LengthTimer;
+    uBYTE ch3WavePointer;
+    uBYTE ch3SamplePointer;
 
 #ifdef FUUGB_SYSTEM_LINUX
     pa_simple* audioClient;

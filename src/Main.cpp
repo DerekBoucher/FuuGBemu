@@ -14,6 +14,8 @@
 #define NATIVE_SIZE_Y 144
 #define SCALE 5
 
+using namespace std;
+
 GLFWwindow* window;
 Gameboy* gameboy;
 
@@ -97,8 +99,8 @@ int main(int argc, char** argv) {
     }
 
     // Read rom data
-    char romData[MAX_CART_SIZE];
-    romFile.read(romData, MAX_CART_SIZE);
+    uBYTE* romData = new uBYTE[MAX_CART_SIZE];
+    romFile.read((char*)romData, MAX_CART_SIZE);
 
     // Set interrupt signal handler
     signal(SIGINT, signalHandler);
@@ -149,7 +151,7 @@ int main(int argc, char** argv) {
 #endif
 
     // Create a gameboy instance
-    gameboy = new Gameboy((uBYTE*)romData, window);
+    gameboy = new Gameboy(romData, window);
 
     SideNav sideNav = SideNav(gameboy);
     if (!sideNav.Init(window))
@@ -177,21 +179,22 @@ int main(int argc, char** argv) {
     // Main program loop
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
+        sideNav.Render();
 
         if (gameboy->RequiresRender()) {
             gameboy->Render();
-            glfwSwapBuffers(window);
         }
 
-        sideNav.Render();
+        glfwSwapBuffers(window);
     }
 
     // Clean up
     gameboy->Stop();
-    delete gameboy;
     sideNav.Shutdown();
     glfwDestroyWindow(window);
     glfwTerminate();
+    delete gameboy;
+    delete[] romData;
 
     return EXIT_SUCCESS;
 }

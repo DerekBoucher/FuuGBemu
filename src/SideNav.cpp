@@ -104,7 +104,7 @@ void SideNav::renderDebuggerWindow() {
 
 void SideNav::renderMemoryPane() {
     if (ImGui::CollapsingHeader("Cartridge ROM")) {
-        memoryEditor.DrawContents(gbRef->memory.cartridge, sizeof(gbRef->memory.cartridge));
+        memoryEditor.DrawContents(gbRef->memory.cartridge, gbRef->memory.romSize);
     }
     if (ImGui::CollapsingHeader("Video RAM")) {
         memoryEditor.DrawContents(gbRef->memory.rom, 0x2000, 0x8000);
@@ -135,8 +135,8 @@ void SideNav::renderVideoPane() {
 
 void SideNav::renderAudioPane() {
     ImGui::Text("Sound channel toggles:");
-    ImGui::Checkbox("Channel 1", &gbRef->apu->debuggerCh1Toggle);
-    ImGui::Checkbox("Channel 2", &gbRef->apu->debuggerCh2Toggle);
+    ImGui::Checkbox("Channel 1", &gbRef->apu.debuggerCh1Toggle);
+    ImGui::Checkbox("Channel 2", &gbRef->apu.debuggerCh2Toggle);
 }
 
 void SideNav::Shutdown() {

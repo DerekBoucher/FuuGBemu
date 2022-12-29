@@ -3,9 +3,7 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/imgui",
-                "${workspaceFolder}/imgui/backends",
-                "${workspaceFolder}/imgui_club",
+                "${workspaceFolder}/**",
                 "/usr/local/include/**",
                 "/usr/include/**",
                 "/usr/lib/x86_64-linux-gnu/glib-2.0/include"

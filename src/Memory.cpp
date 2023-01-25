@@ -347,17 +347,18 @@ void Memory::Write(uWORD addr, uBYTE data)
         {
             if (attributes[romOnly])
             {
-                cartridge[addr] = data;
+                cart_ram[0][addr - 0xA000] = data;
             }
             else if (attributes[mbc1])
             {
                 if (attributes[romRamMode])
                 {
-                    cartridge[translatedAddr + (0xA000 * currentRamBank)] = data;
+                    cart_ram[currentRamBank][addr - 0xA000] = data;
+                    // cartridge[translatedAddr + (0xA000 * currentRamBank)] = data;
                 }
                 else
                 {
-                    cartridge[addr] = data;
+                    cart_ram[0][addr - 0xA000] = data;
                 }
             }
         }
@@ -703,17 +704,17 @@ uBYTE Memory::Read(uWORD addr, bool debugRead)
         {
             if (attributes[romOnly])
             {
-                return cartridge[addr];
+                return cart_ram[0][addr - 0xA000];
             }
 
             if (attributes[mbc1])
             {
                 if (attributes[romRamMode])
                 {
-                    return cartridge[translatedAddr + (0xA000 * currentRamBank)];
+                    return cart_ram[currentRamBank][addr - 0xA000];
                 }
 
-                return cartridge[addr];
+                return cart_ram[0][addr - 0xA000];
             }
         }
 
